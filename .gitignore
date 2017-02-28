@@ -1,0 +1,7 @@
+.idea/
+*.iml
+target/
+out.xml
+rcrdit.ics
+xmltv.xml
+rcrdit.cfg.xml

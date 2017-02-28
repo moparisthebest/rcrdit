@@ -1,0 +1,67 @@
+<!--
+  ~ rcrdit records TV programs from TV tuners
+  ~ Copyright (C) 2017  Travis Burtrum
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU Affero General Public License as
+  ~ published by the Free Software Foundation, either version 3 of the
+  ~ License, or (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License
+  ~ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<configuration>
+
+    <logger name="com.mchange" level="ERROR"/>
+    <logger name="net.fortuna.ical4j" level="ERROR"/>
+
+    <if condition='isNull("logFile")'>
+        <then>
+            <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+                <encoder>
+                    <pattern>%date %-25([%thread]) %-5level %-10logger{10} - %msg%n</pattern>
+                    <outputPatternAsHeader>false</outputPatternAsHeader>
+                </encoder>
+            </appender>
+            <root level="${root-level:-DEBUG}">
+                <appender-ref ref="STDOUT"/>
+            </root>
+        </then>
+        <else>
+
+            <if condition='isNull("logDir")'>
+                <then><property name="logDir" value="${logFile}" /></then>
+            </if>
+
+            <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <file>/var/log/${logDir}/${logFile}.log</file>
+
+                <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                    <!-- rollover daily -->
+                    <fileNamePattern>/var/log/${logDir}/archive/%d{yyyy,aux}/%d{MM,aux}/%d{dd,aux}/${logFile}-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+                    <timeBasedFileNamingAndTriggeringPolicy
+                            class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                        <!-- or whenever the file size reaches 50MB -->
+                        <maxFileSize>50MB</maxFileSize>
+                    </timeBasedFileNamingAndTriggeringPolicy>
+                </rollingPolicy>
+
+                <encoder>
+                    <pattern>%date %-25([%thread]) %-5level %-10logger{10} - %msg%n</pattern>
+                    <outputPatternAsHeader>true</outputPatternAsHeader>
+                </encoder>
+            </appender>
+
+            <root level="${root-level:-DEBUG}">
+                <appender-ref ref="FILE"/>
+            </root>
+        </else>
+    </if>
+
+</configuration>
