@@ -62,9 +62,7 @@ public class RecordThread extends Thread {
         while (running) {
             log.debug("recording started {}", recording);
             File outputFile = null;
-            try (InputStream is = getInputStream.apply(recording);
-                 OutputStream os = new FileOutputStream(outputFile = recording.getNewFileToWrite(ext), true);
-                 ReadableByteChannel ic = Channels.newChannel(is);
+            try (OutputStream os = new FileOutputStream(outputFile = recording.getNewFileToWrite(ext), true);
                  WritableByteChannel oc = Channels.newChannel(os);
             ) {
                 // output file exists now, start onStart events
@@ -79,20 +77,31 @@ public class RecordThread extends Thread {
                 */
                 // new io from https://thomaswabner.wordpress.com/2007/10/09/fast-stream-copy-using-javanio-channels/
                 final ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
-                while (ic.read(buffer) != -1) {
-                    // prepare the buffer to be drained
-                    buffer.flip();
-                    // write to the channel, may block
-                    oc.write(buffer);
-                    // If partial transfer, shift remainder down
-                    // If buffer is empty, same as doing clear()
-                    buffer.compact();
-                }
-                // EOF will leave buffer in fill state
-                buffer.flip();
-                // make sure the buffer is fully drained.
-                while (buffer.hasRemaining()) {
-                    oc.write(buffer);
+
+                while(running) {
+                    try (InputStream is = getInputStream.apply(recording);
+                         ReadableByteChannel ic = Channels.newChannel(is);
+                    ) {
+                        while (ic.read(buffer) != -1) {
+                            // prepare the buffer to be drained
+                            buffer.flip();
+                            // write to the channel, may block
+                            oc.write(buffer);
+                            // If partial transfer, shift remainder down
+                            // If buffer is empty, same as doing clear()
+                            buffer.compact();
+                        }
+                        // EOF will leave buffer in fill state
+                        buffer.flip();
+                        // make sure the buffer is fully drained.
+                        while (buffer.hasRemaining()) {
+                            oc.write(buffer);
+                        }
+                    } catch (InterruptedIOException | java.nio.channels.ClosedByInterruptException e) {
+                        // ignore
+                    } catch (Throwable e) {
+                        log.error("unknown read exception", e);
+                    }
                 }
             } catch (InterruptedIOException | java.nio.channels.ClosedByInterruptException e) {
                 // ignore
