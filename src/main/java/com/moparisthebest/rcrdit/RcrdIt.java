@@ -79,7 +79,8 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
     // config items
     private final Tuners tuners;
     private final Set<String> allChannels;
-    private final String databaseUrl, xmltvPath;
+    private final List<String> xmltvPaths;
+    private final String databaseUrl;
 
     private final TimerTask scheduleTask = new ScheduleTask();
     private final Timer timer = new Timer();
@@ -102,7 +103,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
             serverUri += "/";
         this.serverUri = serverUri;
 
-        this.xmltvPath = rcrdit.getChild("xmltvPath").getValue();
+        this.xmltvPaths = Arrays.stream(rcrdit.getChild("xmltvPaths").getChildren("xmltvPath")).map(XmlElement::getValue).collect(Collectors.toList());
         this.allChannels = Arrays.stream(rcrdit.getChild("channels").getChildren("channel")).map(XmlElement::getValue).collect(Collectors.toSet());
 
         final List<Tuner> tuners = new ArrayList<>();
@@ -370,7 +371,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
         @Override
         public void run() {
             try {
-                schedule = Tv.readSchedule(xmltvPath, allChannels);
+                schedule = Tv.readSchedule(xmltvPaths, allChannels);
                 //System.out.println(schedule);
                 // todo: only re-calcuate if schedule changed
                 reCalculateSchedule();
@@ -412,7 +413,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
                 "tuners=" + tuners +
                 ", allChannels=" + allChannels +
                 ", databaseUrl='" + databaseUrl + '\'' +
-                ", xmltvPath='" + xmltvPath + '\'' +
+                ", xmltvPaths='" + xmltvPaths + '\'' +
                 '}';
     }
 

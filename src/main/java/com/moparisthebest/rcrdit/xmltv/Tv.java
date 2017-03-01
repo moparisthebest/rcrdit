@@ -76,7 +76,7 @@ public class Tv {
                 '}';
     }
 
-    public static Tv readSchedule(final String resource, final Set<String> allChannels) throws Exception {
+    public static Tv readSchedule(final List<String> resources, final Set<String> allChannels) throws Exception {
         //try /*(InputStream is = new FileInputStream(resource))*/ {
             /*
             ObjectMapper mapper = new XmlMapper(new XmlFactory()); // create once, reuse
@@ -107,39 +107,56 @@ public class Tv {
                 .withZone(ZoneId.systemDefault())
                 .withResolverStyle(ResolverStyle.STRICT);
 
-        final XmlElement tv = AbstractXmlElement.getFactory().readFromFile(resource);
-        //System.out.print(tv);
-
         final List<Channel> channels = new ArrayList<>();
-        final Map<String, String> chanIdToChanName = new HashMap<>();
-        for (final XmlElement chan : tv.getChildren("channel")) {
-            final Channel channel = new Channel(chan.getAttribute("id"), Arrays.stream(chan.getChildren("display-name")).map(XmlElement::getValue).collect(Collectors.toSet()));
-            for (final String displayName : channel.getDisplayNames())
-                if (allChannels == null || allChannels.isEmpty() || allChannels.contains(displayName)) {
-                    chanIdToChanName.put(channel.getId(), displayName);
-                    channels.add(channel);
-                    break;
-                }
-        }
-
         final List<Program> programs = new ArrayList<>();
-        final Instant now = Instant.now().truncatedTo(ChronoUnit.MINUTES);
-        Instant lastEndTime = now;
-        for (final XmlElement prog : tv.getChildren("programme")) {
-            final String chanId = prog.getAttribute("channel");
-            final String chanName = chanIdToChanName.get(chanId);
-            if (chanName != null) {
-                final Instant stop = INSTANT.parse(prog.getAttribute("stop"), Instant::from);
-                if (stop.isAfter(now)) {
-                    programs.add(new Program(INSTANT.parse(prog.getAttribute("start"), Instant::from), stop, chanId, chanName,
-                            val(prog.getChild("title")), val(prog.getChild("sub-title")), val(prog.getChild("desc")), val(prog.getChild("episode-num")),
-                            val(prog.getChild("date")), val(prog.getChild("category")), prog.getChild("previously-shown") != null
-                    ));
-                    if (stop.isAfter(lastEndTime))
-                        lastEndTime = stop;
+        Instant lastEndTime = Instant.now();
+
+        for(final String resource : resources) {
+            final XmlElement tv = AbstractXmlElement.getFactory().readFromFile(resource);
+            //System.out.print(tv);
+
+            final Map<String, String> chanIdToChanName = new HashMap<>();
+            for (final XmlElement chan : tv.getChildren("channel")) {
+                final Channel channel = new Channel(chan.getAttribute("id"), Arrays.stream(chan.getChildren("display-name")).map(XmlElement::getValue).collect(Collectors.toSet()));
+                for (final String displayName : channel.getDisplayNames())
+                    if (allChannels == null || allChannels.isEmpty() || allChannels.contains(displayName)) {
+                        chanIdToChanName.put(channel.getId(), displayName);
+                        channels.add(channel);
+                        break;
+                    }
+            }
+
+            final Instant now = Instant.now().truncatedTo(ChronoUnit.MINUTES);
+            for (final XmlElement prog : tv.getChildren("programme")) {
+                final String chanId = prog.getAttribute("channel");
+                final String chanName = chanIdToChanName.get(chanId);
+                if (chanName != null) {
+                    final Instant stop = INSTANT.parse(prog.getAttribute("stop"), Instant::from);
+                    if (stop.isAfter(now)) {
+                        programs.add(new Program(INSTANT.parse(prog.getAttribute("start"), Instant::from), stop, chanId, chanName,
+                                val(prog.getChild("title")), val(prog.getChild("sub-title")), val(prog.getChild("desc")), val(prog.getChild("episode-num")),
+                                val(prog.getChild("date")), val(prog.getChild("category")), prog.getChild("previously-shown") != null
+                        ));
+                        if (stop.isAfter(lastEndTime))
+                            lastEndTime = stop;
+                    }
                 }
             }
         }
+
+        // de-duplicate, keep channels in order, programs don't matter since we will sort anyway...
+        // in theory we should only have to do this if resources.size() > 1, but who knows what kind of crazy xml will appear...
+        {
+            final Set<Channel> dedup = new LinkedHashSet<>(channels);
+            channels.clear();
+            channels.addAll(dedup);
+        }
+        {
+            final Set<Program> dedup = new HashSet<>(programs);
+            programs.clear();
+            programs.addAll(dedup);
+        }
+
         programs.sort(ProgramTimeComparator.instance);
         return new Tv(channels, programs, lastEndTime);
             /*
