@@ -78,7 +78,7 @@ public class RecordThread extends Thread {
                 // new io from https://thomaswabner.wordpress.com/2007/10/09/fast-stream-copy-using-javanio-channels/
                 final ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
 
-                while(running) {
+                while (running) {
                     try (InputStream is = getInputStream.apply(recording);
                          ReadableByteChannel ic = Channels.newChannel(is);
                     ) {

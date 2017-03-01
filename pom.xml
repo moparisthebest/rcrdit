@@ -121,6 +121,7 @@
             <artifactId>logback-classic</artifactId>
             <!-- version here should depend closely to version of slf4j-api above -->
             <version>1.1.2</version>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.codehaus.janino</groupId>
@@ -129,19 +130,22 @@
         </dependency>
 
 
-        <!-- for webservice
+        <!-- for webservice -->
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet</artifactId>
             <version>${jersey.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-grizzly2-http</artifactId>
             <version>${jersey.version}</version>
         </dependency>
-        -->
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-json-jackson</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
     </dependencies>
 
     <developers>

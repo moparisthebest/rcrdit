@@ -34,14 +34,26 @@ import net.fortuna.ical4j.model.TimeZoneRegistryFactory;
 import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.component.VTimeZone;
 import net.fortuna.ical4j.model.property.*;
+import org.glassfish.grizzly.http.server.CLStaticHttpHandler;
+import org.glassfish.grizzly.http.server.HttpServer;
+import org.glassfish.grizzly.http.server.StaticHttpHandler;
+import org.glassfish.grizzly.http.server.StaticHttpHandlerBase;
+import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
+import org.glassfish.jersey.server.ResourceConfig;
 import org.moparscape.xml.impl.AbstractXmlElement;
 import org.moparscape.xml.impl.XmlElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.ApplicationPath;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.math.BigInteger;
+import java.net.URI;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
@@ -58,7 +70,9 @@ import java.util.stream.Collectors;
 /**
  * Created by mopar on 2/16/17.
  */
-public class RcrdIt implements AutoCloseable {
+@ApplicationPath("rest")
+@Path("")
+public class RcrdIt extends ResourceConfig implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(RcrdIt.class);
 
@@ -74,10 +88,20 @@ public class RcrdIt implements AutoCloseable {
     private final List<AutoRec> autoRecs = new ArrayList<>();
     private Tv schedule;
 
+    private final String serverUri;
+
 
     public RcrdIt(final File cfg) throws Exception {
+        register(this);
         final XmlElement rcrdit = AbstractXmlElement.getFactory().readFromFile(cfg);
         this.databaseUrl = rcrdit.getChild("databaseUrl").getValue();
+
+        // this needs to end in /
+        String serverUri = rcrdit.getChild("serverUri").getValue();
+        if (!serverUri.endsWith("/"))
+            serverUri += "/";
+        this.serverUri = serverUri;
+
         this.xmltvPath = rcrdit.getChild("xmltvPath").getValue();
         this.allChannels = Arrays.stream(rcrdit.getChild("channels").getChildren("channel")).map(XmlElement::getValue).collect(Collectors.toSet());
 
@@ -177,8 +201,10 @@ public class RcrdIt implements AutoCloseable {
         startTimers.clear();
         timer.purge();
 
-        if (schedule.getPrograms().isEmpty() || autoRecs.isEmpty())
+        if (schedule.getPrograms().isEmpty() || autoRecs.isEmpty()) {
+            log.debug("nothing to import.");
             return;
+        }
 
         final MessageDigest md;
         try {
@@ -390,6 +416,20 @@ public class RcrdIt implements AutoCloseable {
                 '}';
     }
 
+    @GET
+    @Path("ping")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String ping() {
+        return "pong";
+    }
+
+    @GET
+    @Path("getSchedule")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Tv getSchedule() {
+        return schedule;
+    }
+
     public static void main(String[] args) throws Exception {
         final File cfg;
         if (args.length < 1 || !((cfg = new File(args[0])).exists())) {
@@ -398,13 +438,38 @@ public class RcrdIt implements AutoCloseable {
             return;
         }
         log.debug("rcrdit starting");
+
         final RcrdIt rcrdIt = new RcrdIt(cfg);
-        log.debug("rcrdit started");
+
+        final ApplicationPath ap = RcrdIt.class.getAnnotation(ApplicationPath.class);
+
+        final HttpServer server = GrizzlyHttpServerFactory.createHttpServer(URI.create(ap == null ? rcrdIt.serverUri : rcrdIt.serverUri + ap.value() + "/"), rcrdIt, false);
+
+        final File webapp = new File("./src/main/webapp/");
+        final StaticHttpHandlerBase staticHttpHandler;
+
+        if (new File(webapp, "index.html").canRead()) {
+            //staticHttpHandler = new CLStaticHttpHandler(new URLClassLoader(new URL[]{webapp.toURI().toURL()}));
+            staticHttpHandler = new StaticHttpHandler(webapp.getAbsolutePath());
+            staticHttpHandler.setFileCacheEnabled(false); // don't cache files, because we are in development?
+            System.out.println("File Caching disabled!");
+        } else {
+            staticHttpHandler = new CLStaticHttpHandler(RcrdIt.class.getClassLoader()); // jar class loader, leave cache enabled
+        }
+
+        server.getServerConfiguration().addHttpHandler(staticHttpHandler,
+                rcrdIt.serverUri.replaceFirst("^[^/]+//[^/]+", "")
+        );
+
+        server.start();
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.debug("Shutdown requested");
+            server.shutdownNow();
             rcrdIt.close();
             log.debug("shutdown complete, exiting...");
             System.exit(0);
         }));
+        log.debug("rcrdit started");
     }
 }
