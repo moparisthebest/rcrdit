@@ -18,9 +18,7 @@
 
 package com.moparisthebest.rcrdit.xmltv;
 
-import java.util.Collections;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by mopar on 2/17/17.
@@ -33,6 +31,11 @@ public class Channel {
     //@JacksonXmlElementWrapper(localName = "display-name", useWrapping = false)
     private final Set<String> displayNames;
 
+    String displayName;
+
+    final List<Program> programs = new ArrayList<>();
+    private final List<Program> finalPrograms = Collections.unmodifiableList(programs);
+
     public Channel(final String id, final Set<String> displayNames) {
         this.id = id;
         this.displayNames = Collections.unmodifiableSet(displayNames);
@@ -42,8 +45,16 @@ public class Channel {
         return id;
     }
 
+    public String getDisplayName() {
+        return displayName;
+    }
+
     public Set<String> getDisplayNames() {
         return displayNames;
+    }
+
+    public List<Program> getPrograms() {
+        return finalPrograms;
     }
 
     @Override
@@ -64,7 +75,9 @@ public class Channel {
     public String toString() {
         return "Channel{" +
                 "id='" + id + '\'' +
+                ", displayName='" + displayName + '\'' +
                 ", displayNames=" + displayNames +
+                ", programs=" + programs +
                 '}';
     }
 }

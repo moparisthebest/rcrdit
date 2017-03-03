@@ -115,12 +115,13 @@ public class Tv {
             final XmlElement tv = AbstractXmlElement.getFactory().readFromFile(resource);
             //System.out.print(tv);
 
-            final Map<String, String> chanIdToChanName = new HashMap<>();
+            final Map<String, Channel> chanIdToChannel = new HashMap<>();
             for (final XmlElement chan : tv.getChildren("channel")) {
                 final Channel channel = new Channel(chan.getAttribute("id"), Arrays.stream(chan.getChildren("display-name")).map(XmlElement::getValue).collect(Collectors.toSet()));
                 for (final String displayName : channel.getDisplayNames())
                     if (allChannels == null || allChannels.isEmpty() || allChannels.contains(displayName)) {
-                        chanIdToChanName.put(channel.getId(), displayName);
+                        channel.displayName = displayName;
+                        chanIdToChannel.put(channel.getId(), channel);
                         channels.add(channel);
                         break;
                     }
@@ -129,14 +130,16 @@ public class Tv {
             final Instant now = Instant.now().truncatedTo(ChronoUnit.MINUTES);
             for (final XmlElement prog : tv.getChildren("programme")) {
                 final String chanId = prog.getAttribute("channel");
-                final String chanName = chanIdToChanName.get(chanId);
-                if (chanName != null) {
+                final Channel channel = chanIdToChannel.get(chanId);
+                if (channel != null) {
                     final Instant stop = INSTANT.parse(prog.getAttribute("stop"), Instant::from);
                     if (stop.isAfter(now)) {
-                        programs.add(new Program(INSTANT.parse(prog.getAttribute("start"), Instant::from), stop, chanId, chanName,
+                        final Program program = new Program(INSTANT.parse(prog.getAttribute("start"), Instant::from), stop, chanId, channel.getDisplayName(),
                                 val(prog.getChild("title")), val(prog.getChild("sub-title")), val(prog.getChild("desc")), val(prog.getChild("episode-num")),
                                 val(prog.getChild("date")), val(prog.getChild("category")), prog.getChild("previously-shown") != null
-                        ));
+                        );
+                        channel.programs.add(program);
+                        programs.add(program);
                         if (stop.isAfter(lastEndTime))
                             lastEndTime = stop;
                     }
@@ -158,6 +161,8 @@ public class Tv {
         }
 
         programs.sort(ProgramTimeComparator.instance);
+        channels.forEach(c -> c.programs.sort(ProgramTimeComparator.instance));
+
         return new Tv(channels, programs, lastEndTime);
             /*
         } catch (Exception e) {
