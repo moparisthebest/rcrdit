@@ -65,29 +65,15 @@
         -->
 
         <dependency>
-            <groupId>org.moparscape</groupId>
+            <groupId>com.moparisthebest.sxf4j</groupId>
             <artifactId>sxf4j</artifactId>
-            <version>0.0.1</version>
-            <exclusions>
-                <!--
-                <exclusion>
-                    <groupId>org.codehaus.plexus</groupId>
-                    <artifactId>plexus-utils</artifactId>
-                </exclusion>
-                -->
-                <exclusion>
-                    <groupId>com.thoughtworks.xstream</groupId>
-                    <artifactId>xstream</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>dom4j</groupId>
-                    <artifactId>dom4j</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>xom</groupId>
-                    <artifactId>xom</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.plexus</groupId>
+            <artifactId>plexus-utils</artifactId>
+            <version>3.0.1</version>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- for calendar -->

@@ -18,8 +18,8 @@
 
 package com.moparisthebest.rcrdit.xmltv;
 
-import org.moparscape.xml.impl.AbstractXmlElement;
-import org.moparscape.xml.impl.XmlElement;
+import com.moparisthebest.sxf4j.impl.AbstractXmlElement;
+import com.moparisthebest.sxf4j.impl.XmlElement;
 
 import java.time.Instant;
 import java.time.ZoneId;

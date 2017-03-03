@@ -40,8 +40,8 @@ import org.glassfish.grizzly.http.server.StaticHttpHandler;
 import org.glassfish.grizzly.http.server.StaticHttpHandlerBase;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
-import org.moparscape.xml.impl.AbstractXmlElement;
-import org.moparscape.xml.impl.XmlElement;
+import com.moparisthebest.sxf4j.impl.AbstractXmlElement;
+import com.moparisthebest.sxf4j.impl.XmlElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
