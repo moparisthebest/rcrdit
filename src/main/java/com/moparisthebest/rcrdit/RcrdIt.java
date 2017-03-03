@@ -18,6 +18,8 @@
 
 package com.moparisthebest.rcrdit;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.moparisthebest.jdbc.QueryMapper;
 import com.moparisthebest.rcrdit.autorec.AutoRec;
 import com.moparisthebest.rcrdit.autorec.Profile;
@@ -167,13 +169,13 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
         // generate unique identifier..
         md.reset();
         // incorporate everything to make this unique
-        md.update(Long.toString(start.toEpochMilli()).getBytes());
-        md.update(Long.toString(stop.toEpochMilli()).getBytes());
-        md.update(Long.toString(prog.getProgram().getStart().toEpochMilli()).getBytes());
-        md.update(Long.toString(prog.getProgram().getStop().toEpochMilli()).getBytes());
-        md.update(prog.getProgram().getChannelName().getBytes());
-        md.update(name.getBytes());
-        md.update(description.getBytes());
+        md.update(Long.toString(start.toEpochMilli()).getBytes(UTF_8));
+        md.update(Long.toString(stop.toEpochMilli()).getBytes(UTF_8));
+        md.update(Long.toString(prog.getProgram().getStart().toEpochMilli()).getBytes(UTF_8));
+        md.update(Long.toString(prog.getProgram().getStop().toEpochMilli()).getBytes(UTF_8));
+        md.update(prog.getProgram().getChannelName().getBytes(UTF_8));
+        md.update(name.getBytes(UTF_8));
+        md.update(description.getBytes(UTF_8));
         final byte[] digest = md.digest();
         final Uid uid = new Uid(String.format("%0" + (digest.length << 1) + "x", new BigInteger(1, digest)));
         /*

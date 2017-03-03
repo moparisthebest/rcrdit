@@ -34,6 +34,7 @@ public interface Tuner extends AutoCloseable {
 
     boolean stopAndRecordNow(ProgramAutoRec stop, ProgramAutoRec start, Timer timer);
 
+    @Override
     public void close();
 
     default ProgramAutoRec getRecording() {
