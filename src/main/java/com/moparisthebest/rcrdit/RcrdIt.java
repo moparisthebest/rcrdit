@@ -27,6 +27,7 @@ import com.moparisthebest.rcrdit.autorec.ProgramAutoRec;
 import com.moparisthebest.rcrdit.tuner.HDHomerun;
 import com.moparisthebest.rcrdit.tuner.Tuner;
 import com.moparisthebest.rcrdit.tuner.Tuners;
+import com.moparisthebest.rcrdit.xmltv.Channel;
 import com.moparisthebest.rcrdit.xmltv.Program;
 import com.moparisthebest.rcrdit.xmltv.Tv;
 import net.fortuna.ical4j.data.CalendarOutputter;
@@ -49,8 +50,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.core.MediaType;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -64,10 +67,13 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.moparisthebest.rcrdit.requestbeans.GetScheduleRequest;
 
 /**
  * Created by mopar on 2/16/17.
@@ -135,7 +141,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
                     System.out.print("\"" + name + "\", ");
         */
     }
-
+    
     private static void addMeeting(final Calendar calendar, final VTimeZone tz,
                                    final Instant start, final Instant stop,
                                    final ProgramAutoRec prog, final MessageDigest md, final boolean skipped) {
@@ -426,12 +432,34 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
         return "pong";
     }
 
-    @GET
+    @POST
     @Path("getSchedule")
     @Produces(MediaType.APPLICATION_JSON)
-    public Tv getSchedule() {
-        return schedule;
+    @Consumes(MediaType.APPLICATION_JSON)
+    //List<Channel>
+    public List<Channel> getSchedule(GetScheduleRequest scheduleRequest) {
+        List<Channel> channelList = new ArrayList<>();
+        try{
+            int firstItemToLoad = ((scheduleRequest.getPageNum()-1) * scheduleRequest.getChannelsPerPage());
+            if(schedule.getChannels().size() > firstItemToLoad){
+                for(int i=firstItemToLoad; i<schedule.getChannels().size() && channelList.size() <scheduleRequest.getChannelsPerPage() ;i++){
+                    channelList.add(new Channel(schedule.getChannels().get(i),scheduleRequest.getStartTime(),scheduleRequest.getEndTime()));
+                }
+            }
+        }catch(Exception e){
+            log.error("Error in getSchedule",e);
+        }
+        
+        return channelList;
     }
+    
+   /* @GET
+    @Path("getSchedule")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public void getSchedule() {
+        return schedule;
+    }*/
 
     public static void main(String[] args) throws Exception {
         final File cfg;
@@ -441,6 +469,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
             return;
         }
         log.debug("rcrdit starting");
+        
 
         final RcrdIt rcrdIt = new RcrdIt(cfg);
 

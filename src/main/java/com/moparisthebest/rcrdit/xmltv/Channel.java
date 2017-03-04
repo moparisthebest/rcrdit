@@ -18,6 +18,7 @@
 
 package com.moparisthebest.rcrdit.xmltv;
 
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -36,6 +37,18 @@ public class Channel {
     final List<Program> programs = new ArrayList<>();
     private final List<Program> finalPrograms = Collections.unmodifiableList(programs);
 
+    
+    public Channel(Channel fromChannel, Instant startTime, Instant stopTime){
+        this.displayName = fromChannel.displayName;
+        this.displayNames = fromChannel.displayNames;
+        this.id = fromChannel.id;
+        List<Program> programsForNewChannel = new ArrayList<>();
+        fromChannel.getPrograms().stream().filter((program) -> ((program.getStop().isAfter(startTime) && program.getStop().isBefore(stopTime)) || (program.getStart().isBefore(stopTime) && program.getStart().isAfter(startTime) ) || program.getStart().equals(startTime) || program.getStop().equals(stopTime) )).forEach((program) -> {
+            programsForNewChannel.add(program);
+        });
+        this.programs.addAll(programsForNewChannel);
+    }
+    
     public Channel(final String id, final Set<String> displayNames) {
         this.id = id;
         this.displayNames = Collections.unmodifiableSet(displayNames);
