@@ -47,7 +47,6 @@ public class GetScheduleRequest {
     }
 
     public void setStartTimeString(String startTimeString) {
-        System.out.println("In setStartTimeString");
         this.startTimeString = startTimeString;
         if(startTimeString != null){
             startTime = Instant.parse(startTimeString);
@@ -60,7 +59,6 @@ public class GetScheduleRequest {
     }
 
     public void setEndTimeString(String endTime) {
-        System.out.println("In setEndTimeString");
         this.endTimeString = endTime;
         if(endTimeString != null){
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateTimeFormatPattern).withZone( ZoneOffset.UTC );
@@ -89,7 +87,6 @@ public class GetScheduleRequest {
     }
 
     public final void setStartTime(Instant startTime) {
-        System.out.println("In setStartTime");
         this.startTime = startTime;
         if(this.startTime != null){
             this.startTimeString = DateTimeFormatter.ofPattern(dateTimeFormatPattern).withZone(ZoneOffset.UTC).format(this.startTime);
@@ -101,7 +98,6 @@ public class GetScheduleRequest {
     }
 
     public final void setEndTime(Instant endTime) {
-        System.out.println("In setEndTime");
         this.endTime = endTime;
         if(this.endTime != null){
             this.endTimeString = DateTimeFormatter.ofPattern(dateTimeFormatPattern).withZone(ZoneOffset.UTC).format(this.endTime);

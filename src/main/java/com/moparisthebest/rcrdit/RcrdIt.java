@@ -74,6 +74,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 import com.moparisthebest.rcrdit.requestbeans.GetScheduleRequest;
+import com.moparisthebest.rcrdit.responsebeans.GetScheduleResponse;
 
 /**
  * Created by mopar on 2/16/17.
@@ -437,7 +438,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     //List<Channel>
-    public List<Channel> getSchedule(GetScheduleRequest scheduleRequest) {
+    public GetScheduleResponse getSchedule(GetScheduleRequest scheduleRequest) {
         List<Channel> channelList = new ArrayList<>();
         try{
             int firstItemToLoad = ((scheduleRequest.getPageNum()-1) * scheduleRequest.getChannelsPerPage());
@@ -449,8 +450,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
         }catch(Exception e){
             log.error("Error in getSchedule",e);
         }
-        
-        return channelList;
+        return new GetScheduleResponse(scheduleRequest,channelList);
     }
     
    /* @GET
