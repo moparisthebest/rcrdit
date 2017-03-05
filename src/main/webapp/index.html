@@ -23,9 +23,108 @@
     <title>Rcrdit</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
     <script src="js/rcrdit.js"></script>
+    
+    <style>
+       * {
+            box-sizing: border-box;
+       }
+
+       ul {
+        list-style: none;
+        padding-left: 0;
+        overflow: hidden;
+        display: block;
+        } 
+
+        ul, ol {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        ul ul, ol ul, ul ol, ol ol {
+            margin-bottom: 0;
+        }
+
+        .verticalTimeLine {
+            width: 0;
+            border-left: 1px dashed rgba(51,118,178,0.4);
+            position: absolute;
+            display: block;
+            z-index: 1;
+        }
+
+        ul#channelGroups li ul>li {
+            border-bottom: 1px solid #dbdbdc;
+        }
+        
+        p{
+            margin : 2px;
+        }
+
+        ul#channelGroups li ul li ul li.channel {
+            background: #fff;
+            border-bottom: 1px solid #dbdbdc;
+            border-right: 1px solid #dbdbdc;
+            border-top: 0;
+            height: 40px;
+            padding: 0;
+            position: relative;
+            text-align: center;
+        }
+
+        ul#channelGroups li ul li ul li:first-child {
+            float: left;
+        }
+
+        ul#channelGroups li ul>li {
+            height: 40px;
+            margin: 0;
+            overflow: hidden;
+            padding: 0;
+            position: relative;
+        }
+
+
+
+        ul#channelGroups li ul li ul li.programs>div {
+            display: block;
+            height: 40px;
+            position: absolute;
+        }
+
+
+
+        ul#channelGroups li ul li ul li.programs>div {
+            background: none #fff;
+            border-left: 1px solid #dbdbdc;
+            border-right: 2px solid white;
+            padding: 5px;
+        }
+
+
+        ul#channelGroups li ul li ul li.programs {
+            background: url(../images/tvguide/grid_bg.png) repeat #fff;
+            display: block;
+            height: 40px;
+            overflow: hidden;
+            position: relative;
+            width: initial;
+        }
+
+        ul#channelGroups li ul li ul li.channel {
+            width: 97px;
+        }
+        
+        .programSubtitle{
+            font-size: 8pt;
+        }
+
+
+
+    </style>
 </head>
 <body>
-    <div id="guideGoesHere">
+    <div id="guideGoesHere" style='width: 100%'>
         
         
     </div>
