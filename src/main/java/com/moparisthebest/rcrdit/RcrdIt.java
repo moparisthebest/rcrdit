@@ -75,6 +75,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import com.moparisthebest.rcrdit.requestbeans.GetScheduleRequest;
 import com.moparisthebest.rcrdit.responsebeans.GetScheduleResponse;
+import org.glassfish.jersey.jackson.JacksonFeature;
 
 /**
  * Created by mopar on 2/16/17.
@@ -103,6 +104,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
 
     public RcrdIt(final File cfg) throws Exception {
         register(this);
+        register(JacksonFeature.class);
         final XmlElement rcrdit = AbstractXmlElement.getFactory().readFromFile(cfg);
         this.databaseUrl = rcrdit.getChild("databaseUrl").getValue();
 
