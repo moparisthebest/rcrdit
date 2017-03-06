@@ -18,6 +18,20 @@ function padToTwoDigits(ss){
     return ss;
 }
 
+function forceScheduleUpdate(){
+    $.ajax({
+        url: 'rest/refreshAutoRecs',
+        type: 'post',
+        success: function (data) {
+           alert("Refresh Scheduled");
+        },
+        error:  function ( jqXHR, textStatus, errorThrown ){
+            alert(errorThrown);
+        }
+    });
+    
+}
+
 
 function getSchedule2(requestObject){
     if(isNull(requestObject)){

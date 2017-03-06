@@ -455,6 +455,14 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
         return new GetScheduleResponse(scheduleRequest,channelList);
     }
     
+    
+    @POST
+    @Path("refreshAutoRecs")
+    //List<Channel>
+    public void refreshAutoRecs() {
+        timer.schedule(new AutoRecTask(), 0);
+    }
+    
    /* @GET
     @Path("getSchedule")
     @Produces(MediaType.APPLICATION_JSON)
