@@ -4,6 +4,8 @@
  * and open the template in the editor.
  */
 
+
+
 $( document ).ready(function() {
     getSchedule2(null);
 });
@@ -35,7 +37,8 @@ function getSchedule2(requestObject){
             
             
             $("#guideGoesHere").html("");
-            var channelUl = $("<ul></ul>");
+            $("#guideGoesHere").append(getProgramsHeader(requestObject));
+            var channelUl = $("<ul></ul>").addClass("roundedBottom");
             var channelGroupsUl = $("<ul></ul>").attr("id","channelGroups").append($("<li></li>").append(channelUl));
             for(var idx in channelList){
                 var individualChannelLi = $("<li></li>");
@@ -62,6 +65,87 @@ function getSchedule2(requestObject){
             alert(errorThrown);
         }
     });
+}
+
+function formatTime(dateObj){
+    var hours = dateObj.getHours();
+    var returnString = "";
+    switch(hours) {
+        case 0:
+            returnString = "12:00 AM";
+            break;
+        case 12:
+            returnString = "12:00 PM";
+            break;
+        case 13:
+            returnString = "1:00 PM";
+            break;
+        case 14:
+            returnString = "2:00 PM";
+            break;
+        case 15:
+            returnString = "3:00 PM";
+            break;
+        case 16:
+            returnString = "4:00 PM";
+            break;
+        case 17:
+            returnString = "5:00 PM";
+            break;
+        case 18:
+            returnString = "6:00 PM";
+            break;
+        case 19:
+            returnString = "7:00 PM";
+            break;
+        case 20:
+            returnString = "8:00 PM";
+            break;
+        case 21:
+            returnString = "9:00 PM";
+            break;
+        case 22:
+            returnString = "10:00 PM";
+            break;
+        case 23:
+            returnString = "11:00 PM";
+            break;
+        default:
+            returnString = hours+":00 AM";
+    }
+    return returnString;
+}
+
+function getProgramsHeader(requestObject){
+    var d = new Date();
+    
+    var heading = $("<h1></h1>").append("&nbsp;&nbsp;&nbsp;&nbsp;TV Schedule: ");
+    var dateDiv = $().append("THE DATE GOES HERE");
+    
+    var emptrySpacerLi = $("<li></li>").addClass("navlspacer");
+    var numHoursDisplayed = Math.ceil((requestObject.endTime.epochSecond-requestObject.startTime.epochSecond)/60/60);
+    var hourBlockWidth = (100.0/numHoursDisplayed)+"%";
+    
+    var listOfHoursDisplayed = $("<li></li>").addClass("hours")
+    
+    var firstHourDate = new Date(requestObject.startTime.epochSecond*1000);
+    firstHourDate.setMinutes(0);
+    for(var i=0;i<numHoursDisplayed;i++){
+        var displayTime = formatTime(firstHourDate);
+        var hour = $("<div></div>").attr("style","width: "+hourBlockWidth).append($("<p>"+displayTime+"</p>"));
+        listOfHoursDisplayed.append(hour);
+        firstHourDate.setHours(firstHourDate.getHours()+1);
+    }
+    var timeUl = $("<ul></ul>").addClass("hours").append(emptrySpacerLi).append(listOfHoursDisplayed);
+    
+    var innerLi = $("<li></li>").addClass("nav").addClass("first").append(timeUl);
+    
+    
+    var timeDisplayDiv = $("<div></div>").attr("id","timeDisplayDiv").append(innerLi);
+    
+    var guideHeader = $("<div></div>").addClass("guide-header").append(heading).append(dateDiv).append(timeDisplayDiv);
+    var guideHeaderContainer = $("<div class='guide-header-container'></div>").attr("style","height: 77px;").append(guideHeader);
+    return guideHeaderContainer;
 }
 
 function getProgramDiv(program, requestObject, startAtPercent){

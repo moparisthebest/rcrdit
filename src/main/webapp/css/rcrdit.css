@@ -1,0 +1,236 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : Mar 5, 2017, 10:58:37 PM
+    Author     : Jeff
+*/
+
+body{
+    background-color: #272727;
+    font-family: Helvetica,Arial,sans-serif;
+}
+
+#guideGoesHere{
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#channelGroups{
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
+    box-shadow: 0 0 10px 1px #aaaaaa;
+    background-clip: padding-box;
+}
+
+#channelGroupsDiv{
+
+}
+
+.roundedBottom{
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
+    box-shadow: 0 0 10px 1px #aaaaaa;
+    background-clip: padding-box;
+}
+* {
+    box-sizing: border-box;
+}
+
+ul {
+list-style: none;
+padding-left: 0;
+overflow: hidden;
+display: block;
+} 
+
+ul, ol {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+ul ul, ol ul, ul ol, ol ol {
+    margin-bottom: 0;
+}
+
+.verticalTimeLine {
+    width: 0;
+    border-left: 1px dashed rgba(51,118,178,0.4);
+    position: absolute;
+    display: block;
+    z-index: 1;
+}
+
+ul#channelGroups li ul>li {
+    border-bottom: 1px solid #dbdbdc;
+}
+
+p{
+    margin : 2px;
+}
+
+ul#channelGroups li ul li ul li.channel {
+    background: #fff;
+    border-bottom: 1px solid #dbdbdc;
+    border-right: 1px solid #dbdbdc;
+    border-top: 0;
+    height: 40px;
+    padding: 0;
+    position: relative;
+    text-align: center;
+}
+
+ul#channelGroups li ul li ul li:first-child {
+    float: left;
+}
+
+ul#channelGroups li ul>li {
+    height: 40px;
+    margin: 0;
+    overflow: hidden;
+    padding: 0;
+    position: relative;
+}
+
+
+
+ul#channelGroups li ul li ul li.programs>div {
+    display: block;
+    height: 40px;
+    position: absolute;
+}
+
+
+
+ul#channelGroups li ul li ul li.programs>div {
+    background: none #fff;
+    border-left: 1px solid #dbdbdc;
+    border-right: 2px solid white;
+    padding: 5px;
+}
+
+.guide-header-container{
+    width: initial;
+    position: sticky;
+    top: 0px;
+    z-index: 10;
+    color: #444444;
+    background-color: #272727;
+}
+
+.guide-header{
+    width: 100%;
+
+    box-shadow: 0 0 10px 1px #aaaaaa;
+    border-top-left-radius: 30px;
+    border-top-right-radius: 30px;
+    background-clip: padding-box;
+    background-color: white;
+    transform: translateZ(0);
+}
+
+.guide-header h1{
+   position: relative;
+   margin-bottom: 5px; 
+}
+
+#timeDisplayDiv {
+    border-top: 0;
+    border-bottom: 0;
+    position: relative;
+    padding: 0;
+    margin: 0;
+    height: 35px;
+}
+
+#timeDisplayDiv, #timeDisplayDiv ul {
+    list-style: none;
+    padding-left: 0;
+    overflow: visible;
+}
+
+#timeDisplayDiv li.nav {
+    height: 36px;
+    overflow: visible;
+}
+
+#timeDisplayDiv>li {
+    border-bottom: 1px solid #dbdbdc;
+}
+
+#timeDisplayDiv li.nav ul.hours {
+    background-color: #007eba;
+    height: inherit;
+}
+
+#timeDisplayDiv li ul {
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+}
+
+#timeDisplayDiv li ul.hours li.navlspacer {
+    width: 97px;
+}
+
+#timeDisplayDiv li.navlspacer {
+    height: 36px;
+    background: 0;
+    border: 0;
+    position: relative;
+}
+
+#timeDisplayDiv li.nav ul.hours li.hours {
+    position: relative;
+    overflow: hidden;
+    height: initial;
+    width: initial;
+}
+
+li.hours div p{
+    font-size: 18px;
+    font-weight: bold;
+    color:white;
+
+}
+li.hours div{
+   line-height:36px;
+}
+
+#timeDisplayDiv li ul li:first-child {
+    float: left;
+}
+
+#timeDisplayDiv li.nav ul.hours div {
+    display: inline-block;
+    background: 0;
+    border: 0;
+    height: 36px;
+    margin: 0;
+    padding: 0;
+}
+
+
+
+
+ul#channelGroups li ul li ul li.channel {
+    width: 97px;
+}
+
+.programSubtitle{
+    font-size: 8pt;
+}
+
+#rcrditHeader{
+    width: 70%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 15px;
+    padding-right: 15px;
+    display: block;
+
+}

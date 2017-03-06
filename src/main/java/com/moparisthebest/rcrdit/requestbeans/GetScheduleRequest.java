@@ -28,7 +28,7 @@ public class GetScheduleRequest {
         LocalDateTime now =  LocalDateTime.now();
         LocalDateTime topOfHour = now.withMinute(0);
         setStartTime(topOfHour.toInstant(ZoneOffset.systemDefault().getRules().getOffset(topOfHour)));
-        LocalDateTime endOfNextHour = now.plusHours(1).withMinute(59).withSecond(59);
+        LocalDateTime endOfNextHour = now.plusHours(2).withMinute(59).withSecond(59);
         setEndTime(endOfNextHour.toInstant(ZoneOffset.systemDefault().getRules().getOffset(endOfNextHour)));
     }
    
