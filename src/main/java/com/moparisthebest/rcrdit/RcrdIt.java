@@ -443,6 +443,10 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
     public GetScheduleResponse getSchedule(GetScheduleRequest scheduleRequest) {
         List<Channel> channelList = new ArrayList<>();
         try{
+            if(scheduleRequest.getEndTime().isAfter(GetScheduleRequest.getLastPossibleDateToDisplayOnSchedule(schedule.getLastEndTime()))){
+                //not going to work, need to set things back a bit
+                scheduleRequest.setStartAndEndTimeBasedOnLastDataAvailable(schedule.getLastEndTime());
+            }
             int firstItemToLoad = ((scheduleRequest.getPageNum()-1) * scheduleRequest.getChannelsPerPage());
             if(schedule.getChannels().size() > firstItemToLoad){
                 for(int i=firstItemToLoad; i<schedule.getChannels().size() && channelList.size() <scheduleRequest.getChannelsPerPage() ;i++){

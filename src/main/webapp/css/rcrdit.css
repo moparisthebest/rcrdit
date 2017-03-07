@@ -76,8 +76,9 @@ ul#channelGroups li ul li ul li.channel {
     border-bottom: 1px solid #dbdbdc;
     border-right: 1px solid #dbdbdc;
     border-top: 0;
-    height: 40px;
+    height: 60px;
     padding: 0;
+    padding-top: 20px;
     position: relative;
     text-align: center;
 }
@@ -87,7 +88,7 @@ ul#channelGroups li ul li ul li:first-child {
 }
 
 ul#channelGroups li ul>li {
-    height: 40px;
+    height: 60px;
     margin: 0;
     overflow: hidden;
     padding: 0;
@@ -98,9 +99,37 @@ ul#channelGroups li ul>li {
 
 ul#channelGroups li ul li ul li.programs>div {
     display: block;
-    height: 40px;
+    height: 60px;
     position: absolute;
 }
+
+.frame {
+    height: 36px;      /* equals max image height */
+    width: 50px;
+    white-space: nowrap;
+    
+    text-align: center; margin: 1em 0;
+}
+
+.helper {
+    display: inline-block;
+    height: 100%;
+    vertical-align: middle;
+}
+
+.frame img {
+    vertical-align: middle;
+    max-height: 36px;
+    max-width: 50px;
+}
+
+.datePickerTextBox{
+    border-radius: 4px;
+    height: 30px;
+    font-size: 16pt;
+}
+
+
 
 
 

@@ -7,6 +7,7 @@ package com.moparisthebest.rcrdit.requestbeans;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
@@ -25,12 +26,31 @@ public class GetScheduleRequest {
    private final String dateTimeFormatPattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 
     public GetScheduleRequest() {
+        setStartAndEndTimeBasedOnCurrentType();
+    }
+    
+    
+    private void setStartAndEndTimeBasedOnCurrentType(){
         LocalDateTime now =  LocalDateTime.now();
-        LocalDateTime topOfHour = now.withMinute(0);
+        LocalDateTime topOfHour = now.withMinute(0).withSecond(0).withNano(0);
         setStartTime(topOfHour.toInstant(ZoneOffset.systemDefault().getRules().getOffset(topOfHour)));
-        LocalDateTime endOfNextHour = now.plusHours(2).withMinute(59).withSecond(59);
+        LocalDateTime endOfNextHour = now.plusHours(2).withMinute(59).withSecond(59).withNano(0);
         setEndTime(endOfNextHour.toInstant(ZoneOffset.systemDefault().getRules().getOffset(endOfNextHour)));
     }
+    
+     public void setStartAndEndTimeBasedOnLastDataAvailable(Instant lastDataAvailable){
+        LocalDateTime lastDataAvailableLdt = LocalDateTime.ofInstant(lastDataAvailable,ZoneId.systemDefault());
+        LocalDateTime newLastDate = lastDataAvailableLdt.minusHours(5).withMinute(59).withSecond(59).withNano(0);
+        LocalDateTime newStartTimeLdt = newLastDate.minusHours(2).withMinute(0).withSecond(0).withNano(0);
+        setStartTime(newStartTimeLdt.toInstant(ZoneOffset.systemDefault().getRules().getOffset(newStartTimeLdt)));
+        setEndTime(newLastDate.toInstant(ZoneOffset.systemDefault().getRules().getOffset(newLastDate)));
+    }
+     
+     public static Instant getLastPossibleDateToDisplayOnSchedule(Instant lastDataAvailable){
+        LocalDateTime lastDataAvailableLdt = LocalDateTime.ofInstant(lastDataAvailable,ZoneId.systemDefault());
+        LocalDateTime newLastDate = lastDataAvailableLdt.minusHours(5).withMinute(59).withSecond(59).withNano(0);
+        return newLastDate.toInstant(ZoneOffset.systemDefault().getRules().getOffset(newLastDate));
+     }
    
    
    
@@ -50,6 +70,12 @@ public class GetScheduleRequest {
         this.startTimeString = startTimeString;
         if(startTimeString != null){
             startTime = Instant.parse(startTimeString);
+            LocalDateTime topOfHour = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0);
+            Instant topOfHourInstant = topOfHour.toInstant(ZoneOffset.systemDefault().getRules().getOffset(topOfHour));
+            if(startTime.equals(topOfHourInstant) || startTime.isBefore(topOfHourInstant)){
+                setStartAndEndTimeBasedOnCurrentType();
+            }
+            
         }
         
     }
@@ -62,7 +88,12 @@ public class GetScheduleRequest {
         this.endTimeString = endTime;
         if(endTimeString != null){
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateTimeFormatPattern).withZone( ZoneOffset.UTC );
-            startTime = Instant.parse(endTimeString);
+            this.endTime = Instant.parse(endTimeString);
+            LocalDateTime endOfNextHour = LocalDateTime.now().plusHours(2).withMinute(59).withSecond(59).withNano(0);
+            Instant endOfHourInstant = endOfNextHour.toInstant(ZoneOffset.systemDefault().getRules().getOffset(endOfNextHour));
+            if(this.endTime.equals(endOfHourInstant) || this.endTime.isBefore(endOfHourInstant)){
+                setStartAndEndTimeBasedOnCurrentType();
+            }
         }
     }
 

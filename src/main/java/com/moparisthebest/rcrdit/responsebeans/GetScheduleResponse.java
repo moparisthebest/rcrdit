@@ -16,7 +16,7 @@ import java.util.List;
 public class GetScheduleResponse {
     protected GetScheduleRequest requestObject;
     protected List<Channel> schedule;
-
+    
     public GetScheduleResponse(GetScheduleRequest requestObject, List<Channel> schedule) {
         this.requestObject = requestObject;
         this.schedule = schedule;
