@@ -43,9 +43,17 @@ public class Channel {
         this.displayNames = fromChannel.displayNames;
         this.id = fromChannel.id;
         List<Program> programsForNewChannel = new ArrayList<>();
-        fromChannel.getPrograms().stream().filter((program) -> ((program.getStop().isAfter(startTime) && program.getStop().isBefore(stopTime)) || (program.getStart().isBefore(stopTime) && program.getStart().isAfter(startTime) )|| (program.getStart().isBefore(startTime) &&  program.getStop().isAfter(stopTime) ) || program.getStart().equals(startTime) || program.getStop().equals(stopTime) )).forEach((program) -> {
-            programsForNewChannel.add(program);
+        fromChannel.getPrograms().stream().forEach((program) -> {
+            boolean startsDuringDisplayTime = program.getStart().isAfter(startTime) && program.getStart().isBefore(stopTime);
+            boolean endsDuringDisplayTime = program.getStop().isAfter(startTime) && program.getStop().isBefore(stopTime);
+            boolean stopsAtStopTime = program.getStop().equals(stopTime);
+            boolean startsAtStartTime = program.getStart().equals(startTime);
+            boolean startsBeforeStartTimeAndEndsAfterEndTime = program.getStart().isBefore(startTime) && program.getStop().isAfter(stopTime);
+            if (startsDuringDisplayTime || endsDuringDisplayTime || stopsAtStopTime || startsAtStartTime || startsBeforeStartTimeAndEndsAfterEndTime) {
+                programsForNewChannel.add(program);
+            }
         });
+        
         this.programs.addAll(programsForNewChannel);
     }
     

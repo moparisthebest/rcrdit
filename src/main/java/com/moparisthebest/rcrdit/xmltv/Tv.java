@@ -22,7 +22,9 @@ import com.moparisthebest.sxf4j.impl.AbstractXmlElement;
 import com.moparisthebest.sxf4j.impl.XmlElement;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.ResolverStyle;
@@ -126,8 +128,9 @@ public class Tv {
                         break;
                     }
             }
-
-            final Instant now = Instant.now().truncatedTo(ChronoUnit.MINUTES);
+            final LocalDateTime topOfHour = LocalDateTime.now().withMinute(0);
+            final Instant now = topOfHour.toInstant(ZoneOffset.systemDefault().getRules().getOffset(topOfHour)).truncatedTo(ChronoUnit.MINUTES);
+            //final Instant now = Instant.now()..truncatedTo(ChronoUnit.MINUTES);
             for (final XmlElement prog : tv.getChildren("programme")) {
                 final String chanId = prog.getAttribute("channel");
                 final Channel channel = chanIdToChannel.get(chanId);
