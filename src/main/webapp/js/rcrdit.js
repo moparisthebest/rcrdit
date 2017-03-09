@@ -7,6 +7,7 @@
 
 
 $( document ).ready(function() {
+    initializeProgramInfoPopup();
     getSchedule2(null);
 });
 
@@ -252,68 +253,48 @@ function getProgramDiv(program, requestObject, startAtPercent){
     var widthPercent = (displayDurationMinutes/showingMinutes)*100;
     programDiv.attr("style","left: "+startAtPercent+"%; width: "+widthPercent+"%");
     program.widthPercent = widthPercent;
+    programDiv.click(function(){
+        $("#programInfoTable tr").remove();
+        $(".recordSingleDiv, .recordMultiDiv").remove();
+        var obj = $(this).data("programObj");
+        $("#programInfoTable").data("programObj",obj);
+        $("#programInfoTable").append($("<tr></tr>").addClass("programTitle").append($("<td></td>").html(obj.title)));
+        if(!isNull(obj.subTitle)){
+            $("#programInfoTable").append($("<tr></tr>").addClass("programSubtitleLine").append($("<td></td>").html(obj.subTitle)));
+        }
+        if(!isNull(obj.desc)){
+            $("#programInfoTable").append($("<tr></tr>").append($("<td></td>").addClass("blankSpace")));
+            $("#programInfoTable").append($("<tr></tr>").addClass("programDescription").append($("<td></td>").html(obj.desc)));
+        }
+        
+        $("#programInfo").dialog("open");
+        var recordSingleDiv = $("<div></div>").attr("class","recordSingleDiv");
+        recordSingleDiv.click(function(){
+           var programToRecord = $("#programInfoTable").data("programObj");
+           var recordingScheduleObject = {"profileNo":"1","title": programToRecord.title,"channelName": programToRecord.channelName,"priority": "9999999","startDateEpochSeconds" : programToRecord.start.epochSecond , "endDateEpochSeconds" : programToRecord.stop.epochSecond};
+           scheduleRecording(recordingScheduleObject);
+        });
+        $("#programInfo").append(recordSingleDiv);
+        $("#programInfo").append($("<div></div>").attr("class","recordMultiDiv"));
+    });
     return programDiv;
 }
 
-
-function getSchedule(requestObject){
-    if(isNull(requestObject)){
-        requestObject = {"channelsPerPage" : "100", "pageNum" : "1"};
-    }
+function scheduleRecording(recordingDetails){
     $.ajax({
-        url: 'rest/getSchedule',
+        url: 'rest/recordSingleInstanceOfProgram',
         type: 'post',
-        dataType: 'json',
         contentType: "application/json",
-        data: JSON.stringify(requestObject),
+        data: JSON.stringify(recordingDetails),
         success: function (data) {
-            $("#guideGoesHere").html("");
-            var guideTable = $("<table border='1' cellpadding='1' cellspacing='0' style='border-collapse: collapse;'></table>");
-            
-            var channelList = data.schedule;
-            var requestObject = data.requestObject;
-            var requestStartTimeEpochSeconds = requestObject.startTime.epochSecond;
-            var requestEndTimeEpochSeconds = requestObject.endTime.epochSecond;
-            var requestStartDate = new Date(requestStartTimeEpochSeconds*1000);
-            var requestEndDate = new Date(requestEndTimeEpochSeconds*1000);
-            var nextDate = new Date(requestStartDate.getTime());
-            nextDate.setHours(nextDate.getHours()+1);
-            var timeDisplayRow = $("<tr><td></td><td colspan=60>"+padToTwoDigits(requestStartDate.getHours())+":"+padToTwoDigits(requestStartDate.getMinutes())+"</td><td colspan=60>"+padToTwoDigits(nextDate.getHours())+":"+padToTwoDigits(nextDate.getMinutes())+"</td></tr>");
-            guideTable.append(timeDisplayRow);
-            for(var idx in channelList){
-                var channel = channelList[idx];
-                var channelTableRow = $("<tr><td>"+channel.displayName+"</td></tr>");
-                for(var idx2 in channel.programs){
-                    var program = channel.programs[idx2];
-                    var durationSeconds = program.stop.epochSecond-program.start.epochSecond;
-                    var durationMinutes = durationSeconds/60;
-                    var displayDurationSeconds = durationSeconds;
-                    if(program.start.epochSecond < requestStartTimeEpochSeconds){
-                        displayDurationSeconds = displayDurationSeconds-(requestStartTimeEpochSeconds-program.start.epochSecond);
-                    }
-                    if(program.stop.epochSecond > requestEndTimeEpochSeconds){
-                        displayDurationSeconds = displayDurationSeconds-(program.stop.epochSecond-requestEndTimeEpochSeconds);
-                    }
-                    var displayDurationMinutes = displayDurationSeconds/60;
-                    
-                    
-                    
-                    var programText = program.title;
-                    if(!isNull(program.subTitle)){
-                        programText+="<br/><font style='font-size:8pt'>"+program.subTitle+"</font>";
-                    }
-                    channelTableRow.append("<td colspan='"+Math.ceil(displayDurationMinutes)+"'>"+programText+"</td>");
-                }
-                guideTable.append(channelTableRow);
-            }
-            $("#guideGoesHere").append(guideTable);
+            alert("scheduled!");
         },
         error:  function ( jqXHR, textStatus, errorThrown ){
             alert(errorThrown);
         }
     });
+    
 }
-
 
 function isNull(item){
     if(item === null || typeof item === "undefined"){
@@ -321,4 +302,27 @@ function isNull(item){
     }
     return false;
     
+}
+
+function divExists(divId){
+    var found = $("#"+divId);
+    if(found.length === 0){
+        return false;
+    }
+    return true;
+}
+
+function initializeProgramInfoPopup(){
+    if(!divExists("programInfo")){
+        var programInfoDiv = $("<div></div>").attr("id","programInfo");
+        programInfoDiv.append($("<table></table>").attr("id","programInfoTable"));
+        $("body").append(programInfoDiv);
+    }
+    $("#programInfoTable tr").remove();
+            
+    $("#programInfo").dialog({
+        autoOpen: false,
+        dialogClass: 'noTitleStuff2',
+        width: "600"
+    });
 }

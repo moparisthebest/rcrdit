@@ -74,6 +74,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 import com.moparisthebest.rcrdit.requestbeans.GetScheduleRequest;
+import com.moparisthebest.rcrdit.requestbeans.NewRecordingRequest;
 import com.moparisthebest.rcrdit.responsebeans.GetScheduleResponse;
 import org.glassfish.jersey.jackson.JacksonFeature;
 
@@ -457,6 +458,28 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
             log.error("Error in getSchedule",e);
         }
         return new GetScheduleResponse(scheduleRequest,channelList);
+    }
+    
+    @POST
+    @Path("recordSingleInstanceOfProgram")
+    @Consumes(MediaType.APPLICATION_JSON)
+    //List<Channel>
+    public String recordSingleInstanceOfProgram(NewRecordingRequest recordingRequest) {
+        
+        try (Connection conn = DriverManager.getConnection(databaseUrl);
+            QueryMapper qm = new QueryMapper(conn)) {
+            String sql = "INSERT INTO autorecs (autorec_id, profile_id, priority, title, channel_name, days_of_week, between_time_start, between_time_end, time_min, time_max) "
+                        + "VALUES (NULL, ?, ?, ?, ?, NULL, NULL,NULL, from_unixtime(?), from_unixtime(?))";
+            Long startDate = null;
+            Long endDate = null;
+            //if(recordingRequest.getStartDateEpochSeconds() != null)startDate = recordingRequest.getStartDateEpochSeconds();
+            //if(recordingRequest.getEndDateEpochSeconds() != null)endDate = recordingRequest.getEndDateEpochSeconds();
+            qm.executeUpdate(sql, recordingRequest.getProfileNo(),recordingRequest.getPriority(),recordingRequest.getTitle(),recordingRequest.getChannelName(),startDate,endDate);
+            timer.schedule(new AutoRecTask(), 0);
+        }catch(Exception e){
+            log.error("Error in recordSingleInstanceOfProgram",e);
+        }
+        return "OK";
     }
     
     

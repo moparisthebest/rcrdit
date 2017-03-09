@@ -263,3 +263,39 @@ ul#channelGroups li ul li ul li.channel {
     display: block;
 
 }
+
+.noTitleStuff .ui-dialog-titlebar {display:none}
+
+.programTitle{
+    font-size: 22pt;
+}
+
+.programSubtitleLine{
+    font-size: 12pt;
+}
+
+.blankSpace{
+    height: 20px;
+}
+
+.recordSingleDiv{
+    height: 50px;
+    width: 50px;
+    background-image: url("../images/recordSingle.png");
+    float: left;
+}
+
+.recordSingleDiv:hover{
+    cursor:pointer;
+}
+
+.recordSingleDiv:active{
+    background-color:gray;
+}
+
+.recordMultiDiv{
+    height: 50px;
+    width: 50px;
+    background-image: url("../images/recordMulti.png");
+    float: left;
+}
