@@ -13,6 +13,8 @@ public class NewRecordingRequest {
     protected Long profileNo;
     protected String title;
     protected String channelName;
+    protected String startTime;
+    protected String stopTime;
     protected Long startDateEpochSeconds;
     protected Long endDateEpochSeconds;
     protected Long priority;
@@ -63,6 +65,22 @@ public class NewRecordingRequest {
 
     public void setPriority(Long priority) {
         this.priority = priority;
+    }
+
+    public String getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(String startTime) {
+        this.startTime = startTime;
+    }
+
+    public String getStopTime() {
+        return stopTime;
+    }
+
+    public void setStopTime(String stopTime) {
+        this.stopTime = stopTime;
     }
     
     

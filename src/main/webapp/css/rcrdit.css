@@ -282,7 +282,7 @@ ul#channelGroups li ul li ul li.channel {
     height: 50px;
     width: 50px;
     background-image: url("../images/recordSingle.png");
-    float: left;
+    display:inline-block;
 }
 
 .recordSingleDiv:hover{
@@ -297,5 +297,32 @@ ul#channelGroups li ul li ul li.channel {
     height: 50px;
     width: 50px;
     background-image: url("../images/recordMulti.png");
-    float: left;
+    display:inline-block;
+}
+
+.recordMultiDiv:hover{
+    cursor:pointer;
+}
+
+.recordMultiDiv:active{
+    background-color:gray;
+}
+
+#recordOptionsDiv{
+    border: 1px solid black;
+    padding: 3px;
+    border-radius: 5px;
+}
+
+#recordOptionsDiv input, #recordOptionsDiv select{
+    border-radius: 5px;
+}
+
+.fixed-dialog{
+  position: fixed;
+  top: 150px;
+}
+
+.entryError{
+    border: 3px solid red;
 }
