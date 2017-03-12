@@ -11,7 +11,39 @@ $( document ).ready(function() {
     initializeProgramInfoPopup();
     getRecordingProfiles();
     getSchedule2(null);
+    $("#gotoTvGuide").click(function(){
+        getSchedule2(null);
+        $("#autoRecsGoHere").hide();
+        $("#guideGoesHere").show();
+    });
+    
+    $("#gotoAutoRecs").click(function(){
+        $("#guideGoesHere").hide();
+        getAutoRecs();
+        $("#autoRecsGoHere").show();
+        $("#programInfo").dialog("close");
+    });
 });
+
+function getAutoRecs(){
+     $("#autoRecsGoHere").html("");
+    
+    $.ajax({
+        url: 'rest/getAutoRecs',
+        type: 'post',
+        dataType: 'json',
+        success: function (data) {
+           var autoRecDiv = $("#autoRecsGoHere");
+           for(var idx in data){
+               var autoRec = data[idx];
+               autoRecDiv.append($("<tr></tr>").append($("<td></td>").append(autoRec.title)));
+           } 
+        },
+        error:  function ( jqXHR, textStatus, errorThrown ){
+            alert(errorThrown);
+        }
+    });
+}
 
 function initializeToastr(){
 

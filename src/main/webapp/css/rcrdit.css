@@ -326,3 +326,36 @@ ul#channelGroups li ul li ul li.channel {
 .entryError{
     border: 3px solid red;
 }
+
+.sectionSelection{
+    //background-color: green;
+    display: inline-block;
+    //float:left;
+    height: 128px;
+    width:128px;
+    padding: 21px;
+    margin-left: 10px;
+    margin-right: 10px;    
+}
+
+.sectionSelection:hover{
+    cursor: pointer;
+}
+
+.logoImageDiv{
+  display: inline-block; 
+  float:left;
+  margin-right: 10;
+}
+.nowRecording{
+    width: 271px;
+}
+
+#autoRecsGoHere{
+    margin-left: auto;
+    margin-right: auto;
+    background-color: white;
+    padding:20px;
+    border-radius: 30px;
+    height: 400px;
+}

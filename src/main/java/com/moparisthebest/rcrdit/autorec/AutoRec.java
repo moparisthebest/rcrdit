@@ -126,6 +126,7 @@ public class AutoRec implements Comparable<AutoRec>, Finishable {
     }
 
     public Set<DayOfWeek> getDaysOfWeek() {
+        if(daysOfWeek == null)return null;
         return Collections.unmodifiableSet(daysOfWeek); // should never be called, might want to cache if called often
     }
 

@@ -448,7 +448,14 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
         }catch(Exception e){
             log.error("Error in getSchedule",e);
         }
-        return new HashMap<Integer, Profile>();
+        return new HashMap<>();
+    }
+    
+     @POST
+    @Path("getAutoRecs")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<AutoRec> getAutoRecs() {
+        return autoRecs;
     }
     
     @POST
