@@ -24,6 +24,7 @@ import com.moparisthebest.jdbc.QueryMapper;
 import com.moparisthebest.rcrdit.autorec.AutoRec;
 import com.moparisthebest.rcrdit.autorec.Profile;
 import com.moparisthebest.rcrdit.autorec.ProgramAutoRec;
+import com.moparisthebest.rcrdit.tuner.DummyTuner;
 import com.moparisthebest.rcrdit.tuner.HDHomerun;
 import com.moparisthebest.rcrdit.tuner.Tuner;
 import com.moparisthebest.rcrdit.tuner.Tuners;
@@ -67,9 +68,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -123,6 +122,9 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
             switch (tuner.getAttribute("type")) {
                 case "HDHomeRun":
                     tuners.add(new HDHomerun(tuner.getAttribute("url")));
+                    break;
+                case "Dummy":
+                    tuners.add(new DummyTuner());
                     break;
                 default:
                     throw new IllegalArgumentException("unknown tuner type");
@@ -362,6 +364,14 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
                 log.debug("Database connected!");
                 final Map<Integer, Profile> profileMap = qm.toMap("SELECT profile_id, name, folder, run_at_recording_start, run_at_recording_finish FROM profile", new HashMap<>(), Integer.class, Profile.class);
                 //System.out.println(profileMap);
+                /*
+                try(java.sql.ResultSet rs = qm.toResultSet("SELECT profile_id, priority, title, channel_name, days_of_week AS daysOfWeekString, between_time_start AS betweenTimeStartTime, between_time_end AS betweenTimeEndTime, time_min AS timeMinDate, time_max AS timeMaxDate FROM autorecs")) {
+                    for(int x = 1; x <= rs.getMetaData().getColumnCount(); ++x) {
+                        System.out.println(rs.getMetaData().getColumnName(x));
+                        System.out.println(rs.getMetaData().getColumnLabel(x));
+                    }
+                }
+                */
                 autoRecs.clear();
                 qm.toCollection("SELECT profile_id, priority, title, channel_name, days_of_week, between_time_start, between_time_end, time_min, time_max FROM autorecs", autoRecs, AutoRec.class);
                 autoRecs.forEach(a -> a.setProfile(profileMap.get(a.getProfileId())));
@@ -505,12 +515,12 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
                         + "VALUES (NULL, ?, ?, ?, ?, NULL, ?,?, from_unixtime(?), from_unixtime(?))";
             Long startDate = null;
             Long endDate = null;
-            //if(recordingRequest.getStartDateEpochSeconds() != null)startDate = recordingRequest.getStartDateEpochSeconds();
-            //if(recordingRequest.getEndDateEpochSeconds() != null)endDate = recordingRequest.getEndDateEpochSeconds();
+            if(recordingRequest.getStartDateEpochSeconds() != null)startDate = recordingRequest.getStartDateEpochSeconds();
+            if(recordingRequest.getEndDateEpochSeconds() != null)endDate = recordingRequest.getEndDateEpochSeconds();
             String startTime = null;
             String endTime = null;
-            //if(recordingRequest.getStartTime() != null)startTime = recordingRequest.getStartTime().trim();
-            //if(recordingRequest.getStopTime()!= null)endTime = recordingRequest.getStopTime().trim();
+            if(recordingRequest.getStartTime() != null)startTime = recordingRequest.getStartTime().trim();
+            if(recordingRequest.getStopTime()!= null)endTime = recordingRequest.getStopTime().trim();
             qm.executeUpdate(sql, recordingRequest.getProfileNo(),recordingRequest.getPriority(),recordingRequest.getTitle(),recordingRequest.getChannelName(),startTime,endTime,startDate,endDate);
             timer.schedule(new AutoRecTask(), 0);
         }catch(Exception e){

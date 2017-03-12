@@ -27,10 +27,7 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -42,10 +39,9 @@ public class AutoRec implements Comparable<AutoRec>, Finishable {
     private final int profileId, priority;
     private Pattern titlePattern;
     private final String title, channelName;
-    private String daysOfWeekString;
     private Set<DayOfWeek> daysOfWeek;
-    private final LocalTime betweenTimeStart, betweenTimeEnd;
-    private final Instant timeMin, timeMax;
+    private LocalTime betweenTimeStart, betweenTimeEnd;
+    private Instant timeMin, timeMax;
 
     public AutoRec(final int profileId, final int priority, final String title, final String channelName, final Set<DayOfWeek> daysOfWeek, final LocalTime betweenTimeStart, final LocalTime betweenTimeEnd, final Instant timeMin, final Instant timeMax) {
         this.profileId = profileId;
@@ -67,8 +63,6 @@ public class AutoRec implements Comparable<AutoRec>, Finishable {
     @Override
     public void finish(final ResultSet rs) throws SQLException {
         this.titlePattern = this.title == null ? null : Pattern.compile(this.title);
-        this.daysOfWeek = daysOfWeekString == null || daysOfWeekString.trim().isEmpty() ? null : Arrays.stream(daysOfWeekString.split(",")).map(s -> DayOfWeek.of(Integer.parseInt(s))).collect(Collectors.toSet());
-        this.daysOfWeekString = null;
     }
 
     public boolean matches(final Program program) {
@@ -103,6 +97,26 @@ public class AutoRec implements Comparable<AutoRec>, Finishable {
     public int compareTo(final AutoRec o) {
         // this looks reversed but we want highest priority first
         return Integer.compare(o.priority, this.priority);
+    }
+
+    public void setDaysOfWeek(final String daysOfWeek) {
+        this.daysOfWeek = daysOfWeek == null || daysOfWeek.trim().isEmpty() ? null : Arrays.stream(daysOfWeek.split(",")).map(s -> DayOfWeek.of(Integer.parseInt(s))).collect(Collectors.toSet());
+    }
+
+    public void setBetweenTimeStart(final java.sql.Time betweenTimeStart) {
+        this.betweenTimeStart = betweenTimeStart == null ? null : betweenTimeStart.toLocalTime();
+    }
+
+    public void setBetweenTimeEnd(final java.sql.Time betweenTimeEnd) {
+        this.betweenTimeEnd = betweenTimeEnd == null ? null : betweenTimeEnd.toLocalTime();
+    }
+
+    public void setTimeMin(final Date timeMin) {
+        this.timeMin = timeMin == null ? null : timeMin.toInstant();
+    }
+
+    public void setTimeMax(final Date timeMax) {
+        this.timeMax = timeMax == null ? null : timeMax.toInstant();
     }
 
     public Profile getProfile() {
