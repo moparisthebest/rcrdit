@@ -23,7 +23,28 @@ $( document ).ready(function() {
         $("#autoRecsGoHere").show();
         $("#programInfo").dialog("close");
     });
+    getCurrentlyRecording();
+    setInterval(getCurrentlyRecording,30000);
 });
+
+
+function getCurrentlyRecording(){
+    $.ajax({
+        url: 'rest/getCurrentlyRecording',
+        type: 'post',
+        dataType: 'json',
+        success: function (data) {
+            var nowRecordingTable = $("<table></table");
+            for(var idx in data){
+                nowRecordingTable.append($("<tr><td><span class='circle'></span></td><td>"+data[idx].program.title+"</td></tr>"));
+            }
+            $("#nowRecordingDiv").html(nowRecordingTable);
+        },
+        error:  function ( jqXHR, textStatus, errorThrown ){
+            alert(errorThrown);
+        }
+    });
+}
 
 function getAutoRecs(){
      $("#autoRecsGoHere").html("");
@@ -473,6 +494,7 @@ function scheduleRecording(recordingDetails){
         data: JSON.stringify(recordingDetails),
         success: function (data) {
             $("#recordOptionsDiv").hide();
+            setTimeout(getCurrentlyRecording,5000);
             toastr["success"]("Recording Scheduled!");
         },
         error:  function ( jqXHR, textStatus, errorThrown ){

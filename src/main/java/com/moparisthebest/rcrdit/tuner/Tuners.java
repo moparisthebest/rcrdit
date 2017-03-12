@@ -107,6 +107,12 @@ public class Tuners implements Tuner {
         return chosenTuner.recordNow(par, timer);
     }
 
+    public List<Tuner> getTuners() {
+        return tuners;
+    }
+    
+    
+
     @Override
     public synchronized boolean stopRecording(final ProgramAutoRec program) {
         for (final Tuner tuner : tuners)

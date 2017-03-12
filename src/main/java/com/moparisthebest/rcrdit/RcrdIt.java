@@ -451,11 +451,22 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
         return new HashMap<>();
     }
     
-     @POST
+    @POST
     @Path("getAutoRecs")
     @Produces(MediaType.APPLICATION_JSON)
     public List<AutoRec> getAutoRecs() {
         return autoRecs;
+    }
+    
+    @POST
+    @Path("getCurrentlyRecording")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<ProgramAutoRec> getCurrentlyRecording() {
+        List<ProgramAutoRec> currentlyRecording = new ArrayList<>();
+        tuners.getTuners().stream().map((tuner) -> tuner.getRecording()).filter((rec) -> (rec != null)).forEach((rec) -> {
+            currentlyRecording.add(rec);
+        });
+        return currentlyRecording;
     }
     
     @POST
