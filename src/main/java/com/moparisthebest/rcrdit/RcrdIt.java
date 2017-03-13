@@ -323,6 +323,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
             cursor = cursor.plus(1, ChronoUnit.MINUTES);
         }
         // increment by minute up until end scheduling all timers until then, somehow store this info to show/email etc?
+        
         log.debug("import done.\n\n------\n\n");
         if (!calendar.getComponents().isEmpty())
             try (FileOutputStream fout = new FileOutputStream("rcrdit.ics")) {
@@ -331,6 +332,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
             } catch (Exception e) {
                 // ignore e.printStackTrace();
             }
+        
     }
 
     private static void removeStoppedShows(final VTimeZone tz, final Calendar calendar, final Map<ProgramAutoRec, Instant> recs, final Instant finalCursor, final MessageDigest md, final boolean skipped) {
@@ -449,7 +451,6 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
     @POST
     @Path("getRecordingProfiles")
     @Produces(MediaType.APPLICATION_JSON)
-    //List<Channel>
     public Map<Integer, Profile> getRecordingProfiles() {
         try (Connection conn = DriverManager.getConnection(databaseUrl);
              QueryMapper qm = new QueryMapper(conn)) {
@@ -480,10 +481,26 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
     }
     
     @POST
+    @Path("getUpcomingRecordings")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<Long,Program> getUpcomingRecordings() {
+        Map<Long,Program> returnMap = new LinkedHashMap<>();
+        for(TimerTask t : startTimers){
+            if(t instanceof RecordingTask){
+                RecordingTask rt = (RecordingTask)t;
+                if(rt.start != null && rt.scheduledExecutionTime() > System.currentTimeMillis()){
+                    returnMap.put(rt.scheduledExecutionTime(),rt.start.getProgram());
+                }
+            }
+        }
+        return returnMap;
+    }
+    
+    
+    @POST
     @Path("getSchedule")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    //List<Channel>
     public GetScheduleResponse getSchedule(GetScheduleRequest scheduleRequest) {
         List<Channel> channelList = new ArrayList<>();
         try{
@@ -506,7 +523,6 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
     @POST
     @Path("recordSingleInstanceOfProgram")
     @Consumes(MediaType.APPLICATION_JSON)
-    //List<Channel>
     public String recordSingleInstanceOfProgram(NewRecordingRequest recordingRequest) {
         
         try (Connection conn = DriverManager.getConnection(databaseUrl);
@@ -532,19 +548,10 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
     
     @POST
     @Path("refreshAutoRecs")
-    //List<Channel>
     public void refreshAutoRecs() {
         timer.schedule(new AutoRecTask(), 0);
     }
     
-   /* @GET
-    @Path("getSchedule")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public void getSchedule() {
-        return schedule;
-    }*/
-
     public static void main(String[] args) throws Exception {
         final File cfg;
         if (args.length < 1 || !((cfg = new File(args[0])).exists())) {
