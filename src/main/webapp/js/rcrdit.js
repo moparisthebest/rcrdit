@@ -11,6 +11,7 @@ $( document ).ready(function() {
     initializeProgramInfoPopup();
     getRecordingProfiles();
     getSchedule2(null);
+    moment.locale('en');
     $("#gotoTvGuide").click(function(){
         getSchedule2(null);
         $("#autoRecsGoHere").hide();
@@ -67,13 +68,24 @@ function getUpcomingRecordings(){
         success: function (data) {
            var upcomingRecordingsDiv = $("#upcomingRecordingsGoHere");
            var upcomingRecordingTable = $("<table></table");
-           for(var idx in data){
+           var lastDate = "";
+            for(var idx in data){
                var scheduledRec = data[idx];
                var startRecordingDate = new Date(0); 
                startRecordingDate.setUTCSeconds((idx/1000));
+               var formattedDate = moment(startRecordingDate).format("YYYY-MM-DD");
+               var formattedTime = moment(startRecordingDate).format("h:mm A");
+               if(formattedDate !== lastDate){
+                   upcomingRecordingTable.append($("<tr></tr>").append($("<td></td>").addClass("dateDisplayRow").append(formattedDate)));
+                   lastDate = formattedDate;
+               }
                var subtitle = scheduledRec.subTitle;
                if(subtitle === null)subtitle = "";
-               upcomingRecordingTable.append($("<tr></tr>").append($("<td></td>").append(startRecordingDate.toString()+" - "+scheduledRec.title+" - "+subtitle)));
+               
+               upcomingRecordingTable.append($("<tr></tr>").append($("<td></td>").append("&nbsp;")).append($("<td></td>").append(formattedTime)).append($("<td></td>").append(scheduledRec.channelName)).append($("<td></td>").append(scheduledRec.title+" - "+subtitle)));
+               
+                
+                
            } 
            upcomingRecordingsDiv.append(upcomingRecordingTable);
         },
