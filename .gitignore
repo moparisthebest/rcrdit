@@ -2,6 +2,8 @@
 *.iml
 target/
 out.xml
-rcrdit.ics
+*.ics
 xmltv.xml
 rcrdit.cfg.xml
+*.txt
+*.diff

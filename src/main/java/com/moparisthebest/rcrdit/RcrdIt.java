@@ -24,6 +24,9 @@ import com.moparisthebest.jdbc.QueryMapper;
 import com.moparisthebest.rcrdit.autorec.AutoRec;
 import com.moparisthebest.rcrdit.autorec.Profile;
 import com.moparisthebest.rcrdit.autorec.ProgramAutoRec;
+import com.moparisthebest.rcrdit.scheduler.PartialScheduler;
+import com.moparisthebest.rcrdit.scheduler.Scheduler;
+import com.moparisthebest.rcrdit.scheduler.StartStop;
 import com.moparisthebest.rcrdit.tuner.DummyTuner;
 import com.moparisthebest.rcrdit.tuner.HDHomerun;
 import com.moparisthebest.rcrdit.tuner.Tuner;
@@ -62,15 +65,12 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.sql.*;
+import java.time.*;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.Date;
 import java.util.stream.Collectors;
 import com.moparisthebest.rcrdit.requestbeans.GetScheduleRequest;
 import com.moparisthebest.rcrdit.requestbeans.NewRecordingRequest;
@@ -83,6 +83,9 @@ import org.glassfish.jersey.jackson.JacksonFeature;
 @ApplicationPath("rest")
 @Path("")
 public class RcrdIt extends ResourceConfig implements AutoCloseable {
+
+    // for testing, should be null normally
+    private static final LocalDateTime fakeTime = null;//LocalDateTime.of(2017, 3, 11, 0, 0);
 
     private static final Logger log = LoggerFactory.getLogger(RcrdIt.class);
 
@@ -98,6 +101,8 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
     private final List<TimerTask> startTimers = new ArrayList<>();
     private final List<AutoRec> autoRecs = new ArrayList<>();
     private Tv schedule;
+
+    private final Scheduler scheduler = new PartialScheduler();
 
     private final String serverUri;
 
@@ -147,6 +152,12 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
                     System.out.print("\"" + name + "\", ");
         */
     }
+
+    private static void addMeeting(final Calendar calendar, final VTimeZone tz,
+                                   final Instant start, final Instant stop,
+                                   final Program prog, final MessageDigest md, final boolean skipped) {
+        addMeeting(calendar, tz, start, stop, new ProgramAutoRec(prog, prog.getAutoRec()), md, skipped);
+    }
     
     private static void addMeeting(final Calendar calendar, final VTimeZone tz,
                                    final Instant start, final Instant stop,
@@ -174,6 +185,8 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
         description += "\nPriority: " + prog.getAutoRec().getPriority();
 
         meeting.getProperties().add(new Description(description));
+        if(fakeTime != null)
+            meeting.getProperties().add(new DtStamp(new DateTime(1489294362645L)));
 
         // add timezone info..
         meeting.getProperties().add(tz.getTimeZoneId());
@@ -209,12 +222,13 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
         calendar.getComponents().add(meeting);
     }
 
-    private synchronized void reCalculateSchedule() {
+    private synchronized void reCalculateScheduleOrig() {
         log.debug("import starting.");
         // cancel all pending timers, clear array, purge timer
         startTimers.forEach(TimerTask::cancel);
         startTimers.clear();
         timer.purge();
+        schedule.getPrograms().forEach(Program::clear);
 
         if (schedule.getPrograms().isEmpty() || autoRecs.isEmpty()) {
             log.debug("nothing to import.");
@@ -239,6 +253,8 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
 
         // start now, get all matching programs scheduled for that minute, determine which to record, schedule timers, start any now?  make sure current ones don't get reset
         Instant cursor = Instant.now().truncatedTo(ChronoUnit.MINUTES);
+        if(fakeTime != null)
+            cursor = fakeTime.toInstant(ZoneOffset.systemDefault().getRules().getOffset(fakeTime)).truncatedTo(ChronoUnit.MINUTES);
         //final Instant end = cursor.plus(1, ChronoUnit.DAYS);
         final Instant end = schedule.getLastEndTime();
         final Map<ProgramAutoRec, Instant> currentRecs = new LinkedHashMap<>(tuners.numTuners()); // todo: needs to be sorted?
@@ -251,7 +267,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
                     // this program is on
                     for (final AutoRec autoRec : autoRecs) {
                         if (autoRec.matches(program)) {
-                            programAutoRecs.add(new ProgramAutoRec(program, autoRec));
+                            programAutoRecs.add(new ProgramAutoRec(program.setAutoRec(autoRec), autoRec));
                             break; // only match highest priority autorec, ie first since they are sorted
                         }
                     }
@@ -276,15 +292,15 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
                     // free tuner, just add
                     if (currentRecs.size() < tuners.numTuners()) {
                         currentRecs.put(programAutoRec, cursor);
+                        programAutoRec.getProgram().addStartStop(new StartStop(cursor, true));
                         // check if we are starting one late, from skipped
                         final Instant start = skippedRecs.remove(programAutoRec);
                         if (start != null) {
                             addMeeting(calendar, tz, start, cursor, programAutoRec, md, true);
                         }
                         //System.out.println("scheduling: "+programAutoRec);
-                        final RecordingTask rt = new RecordingTask(programAutoRec);
+                        final RecordingTask rt = new RecordingTask(programAutoRec, cursor);
                         startTimers.add(rt);
-                        timer.schedule(rt, Date.from(cursor));
                         continue;
                     }
                     // from Tuners.recordNow
@@ -302,9 +318,11 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
                             )
                     );
                     //System.out.println("replacing: "+ recToReplace + " with scheduling: "+programAutoRec);
-                    final RecordingTask rt = new RecordingTask(recToReplace, programAutoRec);
+                    final RecordingTask rt = new RecordingTask(recToReplace, programAutoRec, cursor);
                     startTimers.add(rt);
-                    timer.schedule(rt, Date.from(cursor));
+
+                    recToReplace.getProgram().addStartStop(new StartStop(cursor, false));
+                    programAutoRec.getProgram().addStartStop(new StartStop(cursor, true, recToReplace.getProgram()));
 
                     // remove/replace it
                     final Instant start = currentRecs.remove(recToReplace);
@@ -323,8 +341,163 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
             cursor = cursor.plus(1, ChronoUnit.MINUTES);
         }
         // increment by minute up until end scheduling all timers until then, somehow store this info to show/email etc?
-        
+
         log.debug("import done.\n\n------\n\n");
+
+        if(fakeTime != null) {
+            try (FileOutputStream fout = new FileOutputStream("startTimers.orig.txt")) {
+                for (TimerTask tt : startTimers) {
+                    fout.write(tt.toString().getBytes(UTF_8));
+                    fout.write('\n');
+                }
+            } catch (Exception e) {
+                // ignore e.printStackTrace();
+            }
+            try (FileOutputStream fout = new FileOutputStream("programs.orig.txt")) {
+                for (Program prog : schedule.getPrograms()) {
+                    fout.write(prog.fullString().getBytes(UTF_8));
+                    fout.write('\n');
+                }
+            } catch (Exception e) {
+                // ignore e.printStackTrace();
+            }
+        }
+        if (!calendar.getComponents().isEmpty())
+            try (FileOutputStream fout = new FileOutputStream(fakeTime != null ? "rcrdit.orig.ics" : "rcrdit.ics")) {
+                final CalendarOutputter outputter = new CalendarOutputter();
+                outputter.output(calendar, fout);
+            } catch (Exception e) {
+                // ignore e.printStackTrace();
+            }
+
+    }
+
+    private synchronized void reCalculateSchedule() {
+        if(fakeTime != null)
+            for(String file : new String[]{"rcrdit.ics", "startTimers.txt", "programs.txt", "rcrdit.orig.ics", "startTimers.orig.txt", "programs.orig.txt"})
+                new File(file).delete();
+        reCalculateScheduleOrig();
+        if(fakeTime != null)
+            reCalculateScheduleNew();
+    }
+
+    private synchronized void reCalculateScheduleNew() {
+        log.debug("import starting.");
+        // cancel all pending timers, clear array, purge timer
+        startTimers.forEach(TimerTask::cancel);
+        startTimers.clear();
+        timer.purge();
+        schedule.getPrograms().forEach(Program::clear);
+
+        if (schedule.getPrograms().isEmpty() || autoRecs.isEmpty()) {
+            log.debug("nothing to import.");
+            return;
+        }
+
+        scheduler.schedulePrograms(autoRecs, schedule.getPrograms(), tuners.numTuners(), schedule.getLastEndTime(),
+                RcrdIt.fakeTime != null ?
+                        RcrdIt.fakeTime.toInstant(ZoneOffset.systemDefault().getRules().getOffset(RcrdIt.fakeTime)).truncatedTo(ChronoUnit.MINUTES) :
+                        Instant.now().truncatedTo(ChronoUnit.MINUTES)
+        );
+
+        /*
+        for(final Program prog : schedule.getPrograms())
+            if(prog.getAutoRec() != null && prog.getStartStops().size() > 2)
+                System.out.println(prog);
+        if(true)return;
+        */
+        final MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("no sha-256?", e);
+        }
+        // Create a TimeZone
+        final VTimeZone tz = TimeZoneRegistryFactory.getInstance().createRegistry().getTimeZone(ZoneId.systemDefault().getId()).getVTimeZone();
+        final Calendar calendar = new Calendar();
+        calendar.getProperties().add(new ProdId("-//rcrdit//rcrdit//EN"));
+        calendar.getProperties().add(Version.VERSION_2_0);
+        calendar.getProperties().add(CalScale.GREGORIAN);
+
+        // set up startTimers and rcrdit.ics
+        //for(final Program program : schedule.getPrograms()) {
+        //for(int x = 0; x < schedule.getPrograms().size(); ++x) {
+        for(int x = schedule.getPrograms().size() - 1; x >= 0; --x) {
+            final Program program = schedule.getPrograms().get(x);
+            if(program.getAutoRec() != null) {
+                // wanted to record
+                final List<StartStop> startStops = program.getStartStops();
+                if(startStops.isEmpty()) {
+                    // whole thing skipped...
+                    addMeeting(calendar, tz, program.getStart(), program.getStop(), program, md, true);
+                    continue;
+                }
+                if((startStops.size() % 2) != 0) { // todo: this is really bad, wtf
+                    System.out.println(program.fullString());
+                    continue;
+                }
+                int index = -1;
+                final StartStop first = startStops.get(++index);
+                final StartStop second = startStops.get(++index);
+                if(startStops.size() == 2 && first.getInstant().equals(program.getStart()) && second.getInstant().equals(program.getStop())) {
+                    // whole thing recorded...
+                    addMeeting(calendar, tz, program.getStart(), program.getStop(), program, md, false);
+                    final RecordingTask rt = new RecordingTask(program, program.getStart());
+                    startTimers.add(rt);
+                    continue;
+                }
+                if(first.isStart()) {
+                    if(first.getInstant().equals(program.getStart())) {
+                        // not started at start time, skipped first part of program
+                        addMeeting(calendar, tz, program.getStart(), first.getInstant(), program, md, true);
+                    }
+                    Program toStop = null;
+                    Instant start = null, stop = null, lastStop = null;
+                    for(final StartStop ss : program.getStartStops()) {
+                        if(start == null && ss.isStart()) {
+                            start = ss.getInstant();
+                            toStop = ss.getToStop();
+                        } else if(stop == null && !ss.isStart()) {
+                            stop = ss.getInstant();
+                        } else {
+                            // both set
+                            if(lastStop != null) { // todo: check if lastStop and start are the same, but shouldn't happen?
+                                addMeeting(calendar, tz, lastStop, start, program, md, true);
+                            }
+                            addMeeting(calendar, tz, start, stop, program, md, false);
+
+                            final RecordingTask rt = new RecordingTask(toStop, program, start);
+                            startTimers.add(rt);
+
+                            lastStop = stop;
+                            start = stop = null;
+                        }
+                    }
+                } else {
+                    log.error("holy shit should never happen, bad scheduler?");
+                    throw new RuntimeException("holy shit should never happen, bad scheduler?");
+                }
+            }
+        }
+        
+        log.debug("new import done.\n\n------\n\n");
+
+        try (FileOutputStream fout = new FileOutputStream("startTimers.txt")) {
+            for(TimerTask tt : startTimers) {
+                fout.write(tt.toString().getBytes(UTF_8));
+                fout.write('\n');
+            }
+        } catch (Exception e) {
+            // ignore e.printStackTrace();
+        }
+        try (FileOutputStream fout = new FileOutputStream("programs.txt")) {
+            for(Program prog : schedule.getPrograms()) {
+                fout.write(prog.fullString().getBytes(UTF_8));
+                fout.write('\n');
+            }
+        } catch (Exception e) {
+            // ignore e.printStackTrace();
+        }
         if (!calendar.getComponents().isEmpty())
             try (FileOutputStream fout = new FileOutputStream("rcrdit.ics")) {
                 final CalendarOutputter outputter = new CalendarOutputter();
@@ -345,6 +518,8 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
                 //if(prog.getStop().isBefore(finalCursor)) {
                 final Instant start = entry.getValue();
                 addMeeting(calendar, tz, start, prog.getStop(), par, md, skipped);
+                if(!skipped)
+                    prog.addStartStop(new StartStop(prog.getStop(), false));
                 it.remove();
             }
         }
@@ -395,7 +570,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
         @Override
         public void run() {
             try {
-                schedule = Tv.readSchedule(xmltvPaths, allChannels);
+                schedule = Tv.readSchedule(xmltvPaths, allChannels, RcrdIt.fakeTime != null ? RcrdIt.fakeTime.withMinute(0) : LocalDateTime.now().withMinute(0));
                 //System.out.println(schedule);
                 // todo: only re-calcuate if schedule changed
                 reCalculateSchedule();
@@ -407,14 +582,26 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
 
     private class RecordingTask extends TimerTask {
         private final ProgramAutoRec stop, start;
+        private final Instant runAt;
 
-        RecordingTask(final ProgramAutoRec stop, final ProgramAutoRec start) {
+        RecordingTask(final ProgramAutoRec stop, final ProgramAutoRec start, final Instant runAt) {
             this.stop = stop;
             this.start = start;
+            this.runAt = runAt;
+            if(fakeTime != null)
+                timer.schedule(this, Date.from(runAt));
         }
 
-        RecordingTask(final ProgramAutoRec start) {
-            this(null, start);
+        RecordingTask(final ProgramAutoRec start, final Instant runAt) {
+            this(null, start, runAt);
+        }
+
+        RecordingTask(final Program stop, final Program start, final Instant runAt) {
+            this(stop == null ? null : new ProgramAutoRec(stop, stop.getAutoRec()), start == null ? null : new ProgramAutoRec(start, start.getAutoRec()), runAt);
+        }
+
+        RecordingTask(final Program start, final Instant runAt) {
+            this(null, start, runAt);
         }
 
         @Override
@@ -428,6 +615,15 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+
+        @Override
+        public String toString() {
+            return "RecordingTask{" +
+                    "stop=" + stop +
+                    ", start=" + start +
+                    ", runAt=" + runAt +
+                    "} ";
         }
     }
 
@@ -553,6 +749,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
     }
     
     public static void main(String[] args) throws Exception {
+        //System.out.println(System.currentTimeMillis()); if(true) return;
         final File cfg;
         if (args.length < 1 || !((cfg = new File(args[0])).exists())) {
             System.err.println("Usage: java -jar rcrdit.jar /path/to/rcrdit.cfg.xml");

@@ -21,10 +21,7 @@ package com.moparisthebest.rcrdit.xmltv;
 import com.moparisthebest.sxf4j.impl.AbstractXmlElement;
 import com.moparisthebest.sxf4j.impl.XmlElement;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.ResolverStyle;
@@ -78,7 +75,7 @@ public class Tv {
                 '}';
     }
 
-    public static Tv readSchedule(final List<String> resources, final Set<String> allChannels) throws Exception {
+    public static Tv readSchedule(final List<String> resources, final Set<String> allChannels, final LocalDateTime topOfHour) throws Exception {
         //try /*(InputStream is = new FileInputStream(resource))*/ {
             /*
             ObjectMapper mapper = new XmlMapper(new XmlFactory()); // create once, reuse
@@ -128,7 +125,6 @@ public class Tv {
                         break;
                     }
             }
-            final LocalDateTime topOfHour = LocalDateTime.now().withMinute(0);
             final Instant now = topOfHour.toInstant(ZoneOffset.systemDefault().getRules().getOffset(topOfHour)).truncatedTo(ChronoUnit.MINUTES);
             //final Instant now = Instant.now()..truncatedTo(ChronoUnit.MINUTES);
             for (final XmlElement prog : tv.getChildren("programme")) {

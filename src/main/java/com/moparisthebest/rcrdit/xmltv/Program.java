@@ -18,7 +18,12 @@
 
 package com.moparisthebest.rcrdit.xmltv;
 
+import com.moparisthebest.rcrdit.autorec.AutoRec;
+import com.moparisthebest.rcrdit.scheduler.StartStop;
+
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -27,7 +32,7 @@ import java.util.Objects;
 //@XmlRootElement(name="programme")
 //@JsonIgnoreProperties(value={"previously-shown", "lang", "", "system", "date"})
 //@JsonIgnoreProperties(ignoreUnknown = true)
-public class Program {
+public class Program implements Comparable<Program> {
 
 
     /*
@@ -59,6 +64,9 @@ public class Program {
     private final Instant start, stop;
     private final String channelId, channelName, title, subTitle, desc, episodeNum, date, category;
     private final boolean previouslyShown;
+
+    private final List<StartStop> startStops = new ArrayList<>();
+    private AutoRec autoRec;
 
     public Program(final Instant start, final Instant stop, final String channelId, final String channelName, final String title, final String subTitle, final String desc, final String episodeNum, final String date, final String category, final boolean previouslyShown) {
         this.start = start;
@@ -118,6 +126,39 @@ public class Program {
         return previouslyShown;
     }
 
+    public AutoRec getAutoRec() {
+        return autoRec;
+    }
+
+    /**
+     * Set autoRec if this.autoRec is null, or autoRec.priority > this.autoRec.priority
+     * @param autoRec to set, must be non-null
+     * @return this
+     */
+    public Program setAutoRec(final AutoRec autoRec) {
+        if(this.autoRec == null || this.autoRec.getPriority() < autoRec.getPriority())
+            this.autoRec = autoRec;
+        return this;
+    }
+
+    public void addStartStop(final StartStop startStop) {
+        startStops.add(startStop);
+    }
+
+    public List<StartStop> getStartStops() {
+        return startStops;
+    }
+
+    public void clear() {
+        startStops.clear();
+        this.autoRec = null;
+    }
+
+    @Override
+    public int compareTo(final Program o) {
+        return this.autoRec.compareTo(o.autoRec);
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o) return true;
@@ -155,6 +196,26 @@ public class Program {
                 ", date='" + date + '\'' +
                 ", category='" + category + '\'' +
                 ", previouslyShown=" + previouslyShown +
+                //", autoRec=" + autoRec +
+                //", startStops=" + startStops +
+                '}';
+    }
+
+    public String fullString() {
+        return "Program{" +
+                "start=" + start +
+                ", stop=" + stop +
+                ", channelId='" + channelId + '\'' +
+                ", channelName='" + channelName + '\'' +
+                ", title='" + title + '\'' +
+                ", subTitle='" + subTitle + '\'' +
+                ", desc='" + desc + '\'' +
+                ", episodeNum='" + episodeNum + '\'' +
+                ", date='" + date + '\'' +
+                ", category='" + category + '\'' +
+                ", previouslyShown=" + previouslyShown +
+                ", autoRec=" + autoRec +
+                ", startStops=" + startStops +
                 '}';
     }
 }
