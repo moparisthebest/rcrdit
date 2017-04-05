@@ -74,8 +74,8 @@ public class ProgramAutoRec implements Comparable<ProgramAutoRec> {
     private static String getName(final Program program, final String ext, final String extra, final int count) {
         final StringBuilder sb = new StringBuilder(program.getTitle().length() * 3);
         sb.append(program.getTitle());
-        if (program.getDesc() != null)
-            sb.append('-').append(program.getDesc());
+        if (program.getSubTitle() != null)
+            sb.append('-').append(program.getSubTitle());
         if (program.getEpisodeNum() != null)
             sb.append('-').append(program.getEpisodeNum());
         if (extra != null) {
@@ -84,7 +84,7 @@ public class ProgramAutoRec implements Comparable<ProgramAutoRec> {
                 sb.append('-').append(count);
         }
         // if no desc/num/extra append date so there will never be a Judge-Judy.ts
-        if (program.getDesc() == null && program.getEpisodeNum() == null && extra == null)
+        if (program.getSubTitle() == null && program.getEpisodeNum() == null && extra == null)
             sb.append('-').append(fileUnique.format(program.getStart()));
         sb.append('.').append(ext);
         return sb.toString();
