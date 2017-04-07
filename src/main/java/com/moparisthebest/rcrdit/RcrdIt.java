@@ -588,7 +588,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
             this.stop = stop;
             this.start = start;
             this.runAt = runAt;
-            if(fakeTime != null)
+            if(fakeTime == null)
                 timer.schedule(this, Date.from(runAt));
         }
 
