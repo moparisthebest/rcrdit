@@ -34,6 +34,7 @@ import com.moparisthebest.rcrdit.tuner.Tuners;
 import com.moparisthebest.rcrdit.xmltv.Channel;
 import com.moparisthebest.rcrdit.xmltv.Program;
 import com.moparisthebest.rcrdit.xmltv.Tv;
+import jersey.repackaged.com.google.common.collect.Lists;
 import net.fortuna.ical4j.data.CalendarOutputter;
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.DateTime;
@@ -85,7 +86,7 @@ import org.glassfish.jersey.jackson.JacksonFeature;
 public class RcrdIt extends ResourceConfig implements AutoCloseable {
 
     // for testing, should be null normally
-    private static final LocalDateTime fakeTime = null;//LocalDateTime.of(2017, 3, 11, 0, 0);
+    private static final LocalDateTime fakeTime = LocalDateTime.of(2017, 4, 6, 22, 31);
 
     private static final Logger log = LoggerFactory.getLogger(RcrdIt.class);
 
@@ -426,7 +427,9 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
             final Program program = schedule.getPrograms().get(x);
             if(program.getAutoRec() != null) {
                 // wanted to record
+
                 final List<StartStop> startStops = program.getStartStops();
+
                 if(startStops.isEmpty()) {
                     // whole thing skipped...
                     addMeeting(calendar, tz, program.getStart(), program.getStop(), program, md, true);
@@ -441,16 +444,23 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
                 final StartStop second = startStops.get(++index);
                 if(startStops.size() == 2 && first.getInstant().equals(program.getStart()) && second.getInstant().equals(program.getStop())) {
                     // whole thing recorded...
+                    Program toStop = first.getToStop();
                     addMeeting(calendar, tz, program.getStart(), program.getStop(), program, md, false);
-                    final RecordingTask rt = new RecordingTask(program, program.getStart());
+                    RecordingTask rt = null;
+                    if(toStop != null){
+                        rt = new RecordingTask(toStop, program, program.getStart());
+                    }else {
+                        rt = new RecordingTask(program, program.getStart());
+                    }
                     startTimers.add(rt);
                     continue;
                 }
                 if(first.isStart()) {
-                    if(first.getInstant().equals(program.getStart())) {
+                    //Travis, uncomment me if I'm still needed
+                    //if(first.getInstant().equals(program.getStart())) {
                         // not started at start time, skipped first part of program
-                        addMeeting(calendar, tz, program.getStart(), first.getInstant(), program, md, true);
-                    }
+                        //addMeeting(calendar, tz, program.getStart(), first.getInstant(), program, md, true);
+                    //}
                     Program toStop = null;
                     Instant start = null, stop = null, lastStop = null;
                     for(final StartStop ss : program.getStartStops()) {
@@ -473,6 +483,17 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
                             start = stop = null;
                         }
                     }
+
+                    if(lastStop != null) { // todo: check if lastStop and start are the same, but shouldn't happen?
+                        addMeeting(calendar, tz, lastStop, start, program, md, true);
+                    }
+                    if(start != null && stop != null) {
+                        addMeeting(calendar, tz, start, stop, program, md, false);
+
+                        final RecordingTask rt = new RecordingTask(toStop, program, start);
+                        startTimers.add(rt);
+                    }
+
                 } else {
                     log.error("holy shit should never happen, bad scheduler?");
                     throw new RuntimeException("holy shit should never happen, bad scheduler?");
@@ -483,7 +504,8 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
         log.debug("new import done.\n\n------\n\n");
 
         try (FileOutputStream fout = new FileOutputStream("startTimers.txt")) {
-            for(TimerTask tt : startTimers) {
+            List<TimerTask> tmpTimers  = Lists.reverse(startTimers);
+            for(TimerTask tt : tmpTimers) {
                 fout.write(tt.toString().getBytes(UTF_8));
                 fout.write('\n');
             }

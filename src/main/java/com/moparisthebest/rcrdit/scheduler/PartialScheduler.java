@@ -64,23 +64,23 @@ public class PartialScheduler implements Scheduler {
                 }
             }
             // schedule top 2 (numTuners), record stuff about rest, schedule only if not already recording ouch?
+
+            // it already ended, and stopped itself, just remove it, for both currentRecs and skippedRecs
+            //recs.keySet().removeIf(c -> c.getProgram().getStop().isBefore(finalCursor));
+            for (final Iterator<Map.Entry<Program, Instant>> it = currentRecs.entrySet().iterator(); it.hasNext(); ) {
+                final Map.Entry<Program, Instant> entry = it.next();
+                final Program prog = entry.getKey();
+                if (!prog.getStop().isAfter(cursor)) {
+                    //if(prog.getStop().isBefore(finalCursor)) {
+                    final Instant start = entry.getValue();
+                    prog.addStartStop(new StartStop(prog.getStop(), false));
+                    it.remove();
+                }
+            }
+
             if (!programAutoRecs.isEmpty()) {
                 programAutoRecs.sort(Program::compareTo);
-                // start and stop are same minute and second
                 final Instant finalCursor = cursor;
-
-                // it already ended, and stopped itself, just remove it, for both currentRecs and skippedRecs
-                //recs.keySet().removeIf(c -> c.getProgram().getStop().isBefore(finalCursor));
-                for (final Iterator<Map.Entry<Program, Instant>> it = currentRecs.entrySet().iterator(); it.hasNext(); ) {
-                    final Map.Entry<Program, Instant> entry = it.next();
-                    final Program prog = entry.getKey();
-                    if (!prog.getStop().isAfter(finalCursor)) {
-                        //if(prog.getStop().isBefore(finalCursor)) {
-                        final Instant start = entry.getValue();
-                        prog.addStartStop(new StartStop(prog.getStop(), false));
-                        it.remove();
-                    }
-                }
 
                 // look at highest programAutoRecs up to the number of tuners
                 for (int x = 0; x < Math.min(programAutoRecs.size(), numTuners); ++x) {
