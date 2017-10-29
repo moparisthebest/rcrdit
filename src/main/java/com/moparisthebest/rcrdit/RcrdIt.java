@@ -86,7 +86,7 @@ import org.glassfish.jersey.jackson.JacksonFeature;
 public class RcrdIt extends ResourceConfig implements AutoCloseable {
 
     // for testing, should be null normally
-    private static final LocalDateTime fakeTime = LocalDateTime.of(2017, 4, 6, 22, 31);
+    private static final LocalDateTime fakeTime = null;//LocalDateTime.of(2017, 10, 29, 14, 26);
 
     private static final Logger log = LoggerFactory.getLogger(RcrdIt.class);
 
@@ -223,166 +223,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
         calendar.getComponents().add(meeting);
     }
 
-    private synchronized void reCalculateScheduleOrig() {
-        log.debug("import starting.");
-        // cancel all pending timers, clear array, purge timer
-        startTimers.forEach(TimerTask::cancel);
-        startTimers.clear();
-        timer.purge();
-        schedule.getPrograms().forEach(Program::clear);
-
-        if (schedule.getPrograms().isEmpty() || autoRecs.isEmpty()) {
-            log.debug("nothing to import.");
-            return;
-        }
-
-        final MessageDigest md;
-        try {
-            md = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("no sha-256?", e);
-        }
-        // Create a TimeZone
-        final VTimeZone tz = TimeZoneRegistryFactory.getInstance().createRegistry().getTimeZone(ZoneId.systemDefault().getId()).getVTimeZone();
-        final Calendar calendar = new Calendar();
-        calendar.getProperties().add(new ProdId("-//rcrdit//rcrdit//EN"));
-        calendar.getProperties().add(Version.VERSION_2_0);
-        calendar.getProperties().add(CalScale.GREGORIAN);
-
-        //addMeeting(calendar, tz, Instant.now(), Instant.now().plus(1, ChronoUnit.HOURS), "Progress Meeting", "this is a description", "22.1");
-
-
-        // start now, get all matching programs scheduled for that minute, determine which to record, schedule timers, start any now?  make sure current ones don't get reset
-        Instant cursor = Instant.now().truncatedTo(ChronoUnit.MINUTES);
-        if(fakeTime != null)
-            cursor = fakeTime.toInstant(ZoneOffset.systemDefault().getRules().getOffset(fakeTime)).truncatedTo(ChronoUnit.MINUTES);
-        //final Instant end = cursor.plus(1, ChronoUnit.DAYS);
-        final Instant end = schedule.getLastEndTime();
-        final Map<ProgramAutoRec, Instant> currentRecs = new LinkedHashMap<>(tuners.numTuners()); // todo: needs to be sorted?
-        final Map<ProgramAutoRec, Instant> skippedRecs = new LinkedHashMap<>(tuners.numTuners()); // todo: needs to be sorted?
-        final List<ProgramAutoRec> programAutoRecs = new ArrayList<>();
-        while (!cursor.isAfter(end)) {
-            programAutoRecs.clear();
-            for (final Program program : schedule.getPrograms()) {
-                if (!cursor.isBefore(program.getStart()) && cursor.isBefore(program.getStop())) {
-                    // this program is on
-                    for (final AutoRec autoRec : autoRecs) {
-                        if (autoRec.matches(program)) {
-                            programAutoRecs.add(new ProgramAutoRec(program.setAutoRec(autoRec), autoRec));
-                            break; // only match highest priority autorec, ie first since they are sorted
-                        }
-                    }
-                }
-            }
-            // schedule top 2 (numTuners), record stuff about rest, schedule only if not already recording ouch?
-            if (!programAutoRecs.isEmpty()) {
-                programAutoRecs.sort(ProgramAutoRec::compareTo);
-                // start and stop are same minute and second
-                final Instant finalCursor = cursor;
-
-                // it already ended, and stopped itself, just remove it, for both currentRecs and skippedRecs
-                removeStoppedShows(tz, calendar, currentRecs, finalCursor, md, false);
-                removeStoppedShows(tz, calendar, skippedRecs, finalCursor, md, true);
-
-                // look at highest programAutoRecs up to the number of tuners
-                for (int x = 0; x < Math.min(programAutoRecs.size(), tuners.numTuners()); ++x) {
-                    final ProgramAutoRec programAutoRec = programAutoRecs.get(x);
-                    // if we are already recording it, move on
-                    if (currentRecs.containsKey(programAutoRec))
-                        continue;
-                    // free tuner, just add
-                    if (currentRecs.size() < tuners.numTuners()) {
-                        currentRecs.put(programAutoRec, cursor);
-                        programAutoRec.getProgram().addStartStop(new StartStop(cursor, true));
-                        // check if we are starting one late, from skipped
-                        final Instant start = skippedRecs.remove(programAutoRec);
-                        if (start != null) {
-                            addMeeting(calendar, tz, start, cursor, programAutoRec, md, true);
-                        }
-                        //System.out.println("scheduling: "+programAutoRec);
-                        final RecordingTask rt = new RecordingTask(programAutoRec, cursor);
-                        startTimers.add(rt);
-                        continue;
-                    }
-                    // from Tuners.recordNow
-                    final ProgramAutoRec recToReplace = currentRecs.keySet().stream().filter(r -> r.getProgram() != null && programAutoRec.getProgram().getChannelName().equals(r.getProgram().getChannelName())).findFirst().orElseGet(
-                            // look for un-used tuners
-                            () -> currentRecs.keySet().stream().filter(r -> r.getProgram() == null).findFirst().orElseGet(
-                                    // look for current recordings ending within 70 seconds
-                                    () -> {
-                                        final Instant oneMinuteInFuture = finalCursor.plusSeconds(70);
-                                        return currentRecs.keySet().stream().filter(r -> r.getProgram() == null || r.getProgram().getStop().isBefore(oneMinuteInFuture)).findFirst().orElseGet(
-                                                // find lowest priority
-                                                () -> currentRecs.keySet().stream().min(Comparator.comparingInt(cr -> cr.getAutoRec().getPriority())).orElse(null)
-                                        );
-                                    }
-                            )
-                    );
-                    //System.out.println("replacing: "+ recToReplace + " with scheduling: "+programAutoRec);
-                    final RecordingTask rt = new RecordingTask(recToReplace, programAutoRec, cursor);
-                    startTimers.add(rt);
-
-                    recToReplace.getProgram().addStartStop(new StartStop(cursor, false));
-                    programAutoRec.getProgram().addStartStop(new StartStop(cursor, true, recToReplace.getProgram()));
-
-                    // remove/replace it
-                    final Instant start = currentRecs.remove(recToReplace);
-                    currentRecs.put(programAutoRec, cursor);
-                    addMeeting(calendar, tz, start, cursor, recToReplace, md, false);
-                    skippedRecs.put(recToReplace, cursor);
-                }
-                // look at the extra programAutoRecs that we are skipping due to no tuners
-                for (int x = tuners.numTuners(); x < programAutoRecs.size(); ++x) {
-                    skippedRecs.putIfAbsent(programAutoRecs.get(x), cursor);
-                }
-
-                //System.out.println(cursor);
-                //System.out.println(programAutoRecs);
-            }
-            cursor = cursor.plus(1, ChronoUnit.MINUTES);
-        }
-        // increment by minute up until end scheduling all timers until then, somehow store this info to show/email etc?
-
-        log.debug("import done.\n\n------\n\n");
-
-        if(fakeTime != null) {
-            try (FileOutputStream fout = new FileOutputStream("startTimers.orig.txt")) {
-                for (TimerTask tt : startTimers) {
-                    fout.write(tt.toString().getBytes(UTF_8));
-                    fout.write('\n');
-                }
-            } catch (Exception e) {
-                // ignore e.printStackTrace();
-            }
-            try (FileOutputStream fout = new FileOutputStream("programs.orig.txt")) {
-                for (Program prog : schedule.getPrograms()) {
-                    fout.write(prog.fullString().getBytes(UTF_8));
-                    fout.write('\n');
-                }
-            } catch (Exception e) {
-                // ignore e.printStackTrace();
-            }
-        }
-        if (!calendar.getComponents().isEmpty())
-            try (FileOutputStream fout = new FileOutputStream(fakeTime != null ? "rcrdit.orig.ics" : "rcrdit.ics")) {
-                final CalendarOutputter outputter = new CalendarOutputter();
-                outputter.output(calendar, fout);
-            } catch (Exception e) {
-                // ignore e.printStackTrace();
-            }
-
-    }
-
     private synchronized void reCalculateSchedule() {
-        if(fakeTime != null)
-            for(String file : new String[]{"rcrdit.ics", "startTimers.txt", "programs.txt", "rcrdit.orig.ics", "startTimers.orig.txt", "programs.orig.txt"})
-                new File(file).delete();
-        reCalculateScheduleOrig();
-        if(fakeTime != null)
-            reCalculateScheduleNew();
-    }
-
-    private synchronized void reCalculateScheduleNew() {
         log.debug("import starting.");
         // cancel all pending timers, clear array, purge timer
         startTimers.forEach(TimerTask::cancel);
@@ -401,12 +242,6 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
                         Instant.now().truncatedTo(ChronoUnit.MINUTES)
         );
 
-        /*
-        for(final Program prog : schedule.getPrograms())
-            if(prog.getAutoRec() != null && prog.getStartStops().size() > 2)
-                System.out.println(prog);
-        if(true)return;
-        */
         final MessageDigest md;
         try {
             md = MessageDigest.getInstance("SHA-256");
@@ -502,23 +337,24 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
         }
         
         log.debug("new import done.\n\n------\n\n");
-
-        try (FileOutputStream fout = new FileOutputStream("startTimers.txt")) {
-            List<TimerTask> tmpTimers  = Lists.reverse(startTimers);
-            for(TimerTask tt : tmpTimers) {
-                fout.write(tt.toString().getBytes(UTF_8));
-                fout.write('\n');
+        if(fakeTime != null) {
+            try (FileOutputStream fout = new FileOutputStream("startTimers.txt")) {
+                List<TimerTask> tmpTimers = Lists.reverse(startTimers);
+                for (TimerTask tt : tmpTimers) {
+                    fout.write(tt.toString().getBytes(UTF_8));
+                    fout.write('\n');
+                }
+            } catch (Exception e) {
+                // ignore e.printStackTrace();
             }
-        } catch (Exception e) {
-            // ignore e.printStackTrace();
-        }
-        try (FileOutputStream fout = new FileOutputStream("programs.txt")) {
-            for(Program prog : schedule.getPrograms()) {
-                fout.write(prog.fullString().getBytes(UTF_8));
-                fout.write('\n');
+            try (FileOutputStream fout = new FileOutputStream("programs.txt")) {
+                for (Program prog : schedule.getPrograms()) {
+                    fout.write(prog.fullString().getBytes(UTF_8));
+                    fout.write('\n');
+                }
+            } catch (Exception e) {
+                // ignore e.printStackTrace();
             }
-        } catch (Exception e) {
-            // ignore e.printStackTrace();
         }
         if (!calendar.getComponents().isEmpty())
             try (FileOutputStream fout = new FileOutputStream("rcrdit.ics")) {
