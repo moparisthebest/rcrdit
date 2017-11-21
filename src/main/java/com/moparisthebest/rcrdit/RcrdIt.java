@@ -319,7 +319,7 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
                         }
                     }
 
-                    if(lastStop != null) { // todo: check if lastStop and start are the same, but shouldn't happen?
+                    if(lastStop != null && start != null) { // todo: check if lastStop and start are the same, but shouldn't happen?
                         addMeeting(calendar, tz, lastStop, start, program, md, true);
                     }
                     if(start != null && stop != null) {
