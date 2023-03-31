@@ -562,12 +562,12 @@ function validateProgramRecordDialog(advancedRecordMode){
         var effectiveEndText = $("#effectiveEndText").val();
         var effectiveEndTimestamp =  moment(effectiveEndText,["MM/DD/YYYY hh:mm"]).unix();
         
-        if(isNaN(effectiveBeginTimestamp) && !isNull(effectiveBeginText)){
+        if(isNaN(effectiveBeginTimestamp) && !isEmpty(effectiveBeginText)){
             toastr["error"]("Effective Begin entry is not valid!");
             $("#effectiveBeginText").addClass("entryError");
             error = true;
         }
-        if(isNaN(effectiveEndTimestamp) && !isNull(effectiveEndText)){
+        if(isNaN(effectiveEndTimestamp) && !isEmpty(effectiveEndText)){
             toastr["error"]("Effective End entry is not valid!");
             $("#effectiveEndText").addClass("entryError");
             error = true;

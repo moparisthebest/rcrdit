@@ -398,15 +398,9 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
                  QueryMapper qm = new QueryMapper(conn)) {
                 log.debug("Database connected!");
                 final Map<Integer, Profile> profileMap = qm.toMap("SELECT profile_id, name, folder, run_at_recording_start, run_at_recording_finish FROM profile", new HashMap<>(), Integer.class, Profile.class);
-                //System.out.println(profileMap);
-                /*
-                try(java.sql.ResultSet rs = qm.toResultSet("SELECT profile_id, priority, title, channel_name, days_of_week AS daysOfWeekString, between_time_start AS betweenTimeStartTime, between_time_end AS betweenTimeEndTime, time_min AS timeMinDate, time_max AS timeMaxDate FROM autorecs")) {
-                    for(int x = 1; x <= rs.getMetaData().getColumnCount(); ++x) {
-                        System.out.println(rs.getMetaData().getColumnName(x));
-                        System.out.println(rs.getMetaData().getColumnLabel(x));
-                    }
-                }
-                */
+                // delete old autorecs
+                final int autoRecsDeleted = qm.executeUpdate("DELETE FROM autorecs WHERE time_max < ?", java.sql.Timestamp.from(Instant.now()));
+                log.debug("expired autorecs deleted: {}", autoRecsDeleted);
                 autoRecs.clear();
                 qm.toCollection("SELECT profile_id, priority, title, channel_name, days_of_week, between_time_start, between_time_end, time_min, time_max FROM autorecs", autoRecs, AutoRec.class);
                 autoRecs.forEach(a -> a.setProfile(profileMap.get(a.getProfileId())));
