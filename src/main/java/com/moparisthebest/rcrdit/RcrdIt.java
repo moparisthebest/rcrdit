@@ -581,12 +581,12 @@ public class RcrdIt extends ResourceConfig implements AutoCloseable {
         
         try (Connection conn = DriverManager.getConnection(databaseUrl);
             QueryMapper qm = new QueryMapper(conn)) {
-            String sql = "INSERT INTO autorecs (autorec_id, profile_id, priority, title, channel_name, days_of_week, between_time_start, between_time_end, time_min, time_max) "
-                        + "VALUES (NULL, ?, ?, ?, ?, NULL, ?,?, from_unixtime(?), from_unixtime(?))";
-            Long startDate = null;
-            Long endDate = null;
-            if(recordingRequest.getStartDateEpochSeconds() != null)startDate = recordingRequest.getStartDateEpochSeconds();
-            if(recordingRequest.getEndDateEpochSeconds() != null)endDate = recordingRequest.getEndDateEpochSeconds();
+            String sql = "INSERT INTO autorecs (profile_id, priority, title, channel_name, days_of_week, between_time_start, between_time_end, time_min, time_max) "
+                        + "VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?)";
+            java.sql.Timestamp startDate = null;
+            java.sql.Timestamp endDate = null;
+            if(recordingRequest.getStartDateEpochSeconds() != null)startDate = new Timestamp(recordingRequest.getStartDateEpochSeconds() * 1000);
+            if(recordingRequest.getEndDateEpochSeconds() != null)endDate = new Timestamp(recordingRequest.getEndDateEpochSeconds() * 1000);
             String startTime = null;
             String endTime = null;
             if(recordingRequest.getStartTime() != null)startTime = recordingRequest.getStartTime().trim();

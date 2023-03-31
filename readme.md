@@ -13,6 +13,7 @@ Configure your TV tuner(s) by editing rcrdit.cfg.example.xml, compile the projec
 project with `java -jar target/rcrdit.jar`
 
 rcrdit.ics is generated on every schedule import which when imported to a calendar program like thunderbird can easily
-show which shows will be recorded when and which will be skipped depeding on priority.
+show which shows will be recorded when and which will be skipped depending on priority.
 
-A web interface is coming soon.
+A web interface is included which shows the schedule and allows you to schedule recordings.  Profiles are still set up
+manually in the database.

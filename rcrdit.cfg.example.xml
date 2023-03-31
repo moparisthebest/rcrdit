@@ -18,7 +18,10 @@
 
 <!-- rename this to rcrdit.cfg.xml and pass it's path in as an argument -->
 <rcrdit>
-    <!-- jdbc database path, sqlite/postgresql/oracle/anything jdbc should work too if proper libraries are available -->
+    <!-- jdbc database path, sqlite/postgresql/oracle/anything jdbc should work too if proper libraries are available
+     postgres connecting to unix socket looks like:
+     <databaseUrl>jdbc:postgresql://localhost/rcrdit?user=rcrdit&amp;password=rcrdit&amp;serverTimezone=America/New_York&amp;socketFactory=org.newsclub.net.unix.AFUNIXSocketFactory$FactoryArg&amp;socketFactoryArg=/run/postgresql/.s.PGSQL.5432</databaseUrl>
+     -->
     <databaseUrl>jdbc:mysql://localhost:3306/rcrdit?user=rcrdit&amp;password=rcrdit&amp;serverTimezone=America/New_York</databaseUrl>
     <!-- server uri (context path and port) for web application -->
     <serverUri>http://localhost:8080/rcrdit/</serverUri>
