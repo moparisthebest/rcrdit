@@ -32,7 +32,6 @@ $( document ).ready(function() {
         getUpcomingRecordings();
         $("#autoRecsGoHere").hide();
         $("#upcomingRecordingsGoHere").show();
-        
         $("#programInfo").dialog("close");
     });
     getCurrentlyRecording();
@@ -69,7 +68,14 @@ function getUpcomingRecordings(){
            var upcomingRecordingsDiv = $("#upcomingRecordingsGoHere");
            var upcomingRecordingTable = $("<table></table");
            var lastDate = "";
-            for(var idx in data){
+           // we want this sorted by keys
+           var keys = [];
+           for(var key in data) {
+               keys[keys.length] = key;
+           }
+           keys.sort();
+           for (var i=0; i<keys.length; i++) {
+               var idx = keys[i];
                var scheduledRec = data[idx];
                var startRecordingDate = new Date(0); 
                startRecordingDate.setUTCSeconds((idx/1000));
@@ -95,6 +101,24 @@ function getUpcomingRecordings(){
     });
 }
 
+function sortStringsIgnoreCase(a, b) {
+  var nameA = a.toUpperCase();
+  var nameB = b.toUpperCase();
+  if (nameA < nameB) {
+    return -1;
+  }
+  if (nameA > nameB) {
+    return 1;
+  }
+
+  // names must be equal
+  return 0;
+}
+
+function sortAutoRecs(a, b) {
+  return sortStringsIgnoreCase(a.title, b.title);
+}
+
 function getAutoRecs(){
      $("#autoRecsGoHere").html("");
     
@@ -104,8 +128,15 @@ function getAutoRecs(){
         dataType: 'json',
         success: function (data) {
            var autoRecDiv = $("#autoRecsGoHere");
-           for(var idx in data){
-               var autoRec = data[idx];
+           // we want this sorted by name
+           var autoRecs = [];
+           for(var idx in data) {
+               autoRecs[autoRecs.length] = data[idx];
+           }
+           autoRecs.sort(sortAutoRecs);
+           for (var i=0; i<autoRecs.length; i++) {
+               var autoRec = autoRecs[i];
+               // todo: display more autorec details, expire old autorecs
                autoRecDiv.append($("<tr></tr>").append($("<td></td>").append(autoRec.title)));
            } 
         },
@@ -158,6 +189,11 @@ function forceScheduleUpdate(){
     
 }
 
+function sortChannels(a, b) {
+  //return sortStringsIgnoreCase(a.displayName, b.displayName);
+  // these are basically decimals, so compare them like so
+  return a.displayName - b.displayName;
+}
 
 function getSchedule2(requestObject){
     if(isNull(requestObject)){
@@ -170,16 +206,22 @@ function getSchedule2(requestObject){
         contentType: "application/json",
         data: JSON.stringify(requestObject),
         success: function (data) {
-            var channelList = data.schedule;
             var requestObject = data.requestObject;
             var requestStartTimeEpochSeconds = requestObject.startTime.epochSecond;
             $("#guideGoesHere").html("");
             $("#guideGoesHere").append(getProgramsHeader(requestObject));
             var channelUl = $("<ul></ul>").addClass("roundedBottom");
             var channelGroupsUl = $("<ul></ul>").attr("id","channelGroups").append($("<li></li>").append(channelUl));
-            for(var idx in channelList){
+
+            var channels = [];
+            for(var idx in data.schedule) {
+                channels[channels.length] = data.schedule[idx];
+            }
+            channels.sort(sortChannels);
+
+            for (var i=0; i<channels.length; i++) {
+                var channel = channels[i];
                 var individualChannelLi = $("<li></li>");
-                var channel = channelList[idx];
                 var currentPercentOver = 0;
                 var channelProgramUl = $("<ul></ul>").attr("channelNum",channel.displayName);
                 individualChannelLi.append(channelProgramUl);
